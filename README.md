@@ -1,4 +1,4 @@
-# Lama Dev School Management Dashboard
+# Cooperative Loan Management Dashboard
 
 ## Getting Started
 
