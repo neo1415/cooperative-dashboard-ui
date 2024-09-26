@@ -15,7 +15,7 @@ const config: Config = {
       },
       colors:{
         neosky:"#C3EBFA",
-        neoSKyLight:"#EDF9FD",
+        neoSkyLight:"#EDF9FD",
         neoPurple:"#CFCEFF",
         neoPurpleLight:"#F1F0FF",
         neoYellow:"#FAE27C",
