@@ -4,23 +4,24 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { debtorsData, role} from "@/lib/data";
+import { MemberSavings } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-type Debtors = {
+type MembersSavings = {
   id: number;
+  cooperative: string
+  cooperativeId: number;
   memberId: string;
   surname:          string
   firstName:         string
   middleName:        string
-  cooperative: string
-  dateLoanRecieved: string
-  noOfMonths: string[];
-  membersCapital: string
-  ordinarySavings: string
-  specialSavings: string
-  memberLoan: string
-  interestOnLoan: string
+  dateOfEntry: string
+  telephone: string;
+  savingsDeposits: string
+  withdrawals: string
+  savingsBalance: string
+  grandTotal: string
   photo: string;
 };
 
@@ -30,7 +31,12 @@ const columns = [
     accessor: "info",
   },
   {
-    header: "Debtor ID",
+    header: "Savings ID",
+    accessor: "savingsId",
+    className: "hidden md:table-cell",
+  },
+  {
+    header: "Member ID",
     accessor: "memberId",
     className: "hidden md:table-cell",
   },
@@ -55,49 +61,34 @@ const columns = [
     className: "hidden md:table-cell",
   },
   {
-    header: "Date Of Loan Recieved",
-    accessor: "dateLoanRecieved",
+    header: "Date Of Entry",
+    accessor: "dateOfEntry",
     className: "hidden md:table-cell",
   },
   {
-    header: "Number of Months",
-    accessor: "noOfMonths",
+    header: "Telephone",
+    accessor: "telephone",
     className: "hidden md:table-cell",
   },
   {
-    header: "Members Capital",
-    accessor: "membersCapital",
+    header: "Savings Deposits",
+    accessor: "savingsDeposits",
     className: "hidden md:table-cell",
   },
   {
-    header: "Ordinary Savings",
-    accessor: "ordinarySavings",
+    header: "Withdrawals",
+    accessor: "withdrawals",
     className: "hidden md:table-cell",
   },
   {
-    header: "Special Savings",
-    accessor: "specialSavings",
+    header: "Savings Balance",
+    accessor: "savingsBalance",
     className: "hidden md:table-cell",
   },
   {
-    header: "Members Loan",
-    accessor: "memberLoan",
+    header: "Grand Total",
+    accessor: "grandTotal",
     className: "hidden md:table-cell",
-  },
-  {
-    header: "Interest on Loan",
-    accessor: "interestOnLoan",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Phone",
-    accessor: "phone",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Address",
-    accessor: "address",
-    className: "hidden lg:table-cell",
   },
   {
     header: "Actions",
@@ -106,7 +97,7 @@ const columns = [
 ];
 
 const LoanListPage = () => {
-  const renderRow = (item: Debtors) => (
+  const renderRow = (item: MembersSavings) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
@@ -120,20 +111,20 @@ const LoanListPage = () => {
           className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
         />
         <div className="flex flex-col">
+          <h3 className="font-semibold">{item.id}</h3>
           <h3 className="font-semibold">{item.memberId}</h3>
-          <p className="text-xs text-gray-500">{item?.surname}</p>
+          <p className="text-xs text-gray-500">{item?.cooperative}</p>
         </div>
       </td>
+      <td className="hidden md:table-cell">{item.surname}</td>
       <td className="hidden md:table-cell">{item.firstName}</td>
       <td className="hidden md:table-cell">{item.middleName}</td>
-      <td className="hidden md:table-cell">{item.cooperative}</td>
-      <td className="hidden md:table-cell">{item.dateLoanRecieved}</td>
-      <td className="hidden md:table-cell">{item.noOfMonths}</td>
-      <td className="hidden md:table-cell">{item.membersCapital}</td>
-      <td className="hidden md:table-cell">{item.ordinarySavings}</td>
-      <td className="hidden md:table-cell">{item.specialSavings}</td>
-      <td className="hidden md:table-cell">{item.memberLoan}</td>
-      <td className="hidden md:table-cell">{item.interestOnLoan}</td>
+      <td className="hidden md:table-cell">{item.dateOfEntry}</td>
+      <td className="hidden md:table-cell">{item.telephone}</td>
+      <td className="hidden md:table-cell">{item.savingsDeposits}</td>
+      <td className="hidden md:table-cell">{item.withdrawals}</td>
+      <td className="hidden md:table-cell">{item.savingsBalance}</td>
+      <td className="hidden md:table-cell">{item.grandTotal}</td>
       {/* <td className="hidden md:table-cell">{item.phone}</td>
       <td className="hidden md:table-cell">{item.address}</td> */}
       <td>

@@ -9,18 +9,23 @@ import { useState } from "react";
 // import TeacherForm from "./forms/TeacherForm";
 // import StudentForm from "./forms/StudentForm";
 
-const KYCForm = dynamic(() => import("./forms/KYCForm"), {
+const DebtorForm = dynamic(() => import("./forms/DebtorForm"), {
   loading: () => <h1>Loading...</h1>,
 });
 const LoanForm = dynamic(() => import("./forms/LoanForm"), {
   loading: () => <h1>Loading...</h1>,
 });
 
+const CooperativeForm = dynamic(() => import("./forms/CooperativeForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+
 const forms: {
   [key: string]: (type: "create" | "update", data?: any) => JSX.Element;
 } = {
-  teacher: (type, data) => <KYCForm type={type} data={data} />,
-  student: (type, data) => <LoanForm type={type} data={data} />
+  teacher: (type, data) => <DebtorForm type={type} data={data} />,
+  loan: (type, data) => <LoanForm type={type} data={data} />,
+  cooperative: (type, data) => <CooperativeForm type={type} data={data} />
 };
 
 const FormModal = ({
@@ -31,8 +36,8 @@ const FormModal = ({
 }: {
   table:
     | "teacher"
-    | "student"
-    | "parent"
+    | "loan"
+    | "cooperative"
     | "subject"
     | "class"
     | "lesson"
