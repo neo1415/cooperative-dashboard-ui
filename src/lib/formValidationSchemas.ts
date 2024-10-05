@@ -89,8 +89,6 @@ export const cooperativeSchema = z.object({
   directorSourceOfIncome: z.enum(["SALARYORBUSINESSINCOME", "INVESTMENTSORDIVIDENDS"], {
     message: "Invalid source of income!",
   }),
-
-  // img: z.instanceof(File, { message: "Image is required" }),
 });
 
 export type CooperativeSchema = z.infer<typeof cooperativeSchema>;

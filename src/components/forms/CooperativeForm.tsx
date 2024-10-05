@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import Image from "next/image";
 import SelectField from "../SelectInput";
 import { cooperativeSchema, CooperativeSchema } from "@/lib/formValidationSchemas";
 import { submitCcoperativeForm } from "@/lib/actions";

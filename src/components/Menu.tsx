@@ -6,7 +6,7 @@ const menuItems = [
         icon: "/home.png",
         label: "Home",
         href: "/",
-        visible: ["super-admin", "admin", "member", "auditor"],
+        visible: ["super-admin", "admin", "member", "auditor", "cooperative-admin", "cooperative-auditor","cooperative-member"],
       },
       {
         icon: "/attendance.png",
@@ -15,46 +15,47 @@ const menuItems = [
         visible: ["admin", "super-admin", "auditor"],
       },
       {
+        icon: "/parent.png",
+        label: "Members",
+        href: "/list/users",
+        visible: ["admin", "super-admin", "auditor","cooperative-admin"],
+      },
+      {
         icon: "/teacher.png",
         label: "Loans Requested",
         href: "/list/loansRequested",
-        visible: ["admin", "super-admin","auditor"],
+        visible: ["admin", "super-admin","auditor","cooperative-admin"],
       },
       {
         icon: "/teacher.png",
         label: "Loans Approved",
         href: "/list/loansApproved",
-        visible: ["admin", "super-admin","auditor"],
+        visible: ["admin", "super-admin","auditor","cooperative-admin"],
       },
       {
         icon: "/student.png",
         label: "Assets Requested",
         href: "/list/assetsRequested",
-        visible: ["admin", "super-admin", "auditor"],
+        visible: ["admin", "super-admin", "auditor","cooperative-admin"],
       },
       {
         icon: "/student.png",
         label: "Assets Transferred",
         href: "/list/assetsTransfered",
-        visible: ["admin", "super-admin", "auditor"],
+        visible: ["admin", "super-admin", "auditor","cooperative-admin"],
       },
-      {
-        icon: "/parent.png",
-        label: "Users",
-        href: "/list/users",
-        visible: ["admin", "super-admin", "auditor"],
-      },
+
       {
         icon: "/subject.png",
         label: "Debtors",
         href: "/list/debtors",
-        visible: ["admin", "super-admin"],
+        visible: ["admin", "super-admin","cooperative-admin"],
       },
       {
         icon: "/class.png",
         label: "Market Place",
         href: "/list/marketPlace",
-        visible: ["admin", "member"],
+        visible: ["admin", "member","cooperative-admin"],
       },
       {
         icon: "/lesson.png",
