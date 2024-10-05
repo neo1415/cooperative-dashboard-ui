@@ -146,6 +146,8 @@ export const memberSchema = z.object({
     .min(1, { message: "Next of Kin Phone 2 is required!" })
     .max(15, { message: "Next of Kin Phone 2 must be a valid number!" }),
   sponsor: z.string().min(1, { message: "Sponsor is required!" }),
+  // img: z.string().optional(), // Assuming the image is a URL, make it optional
+
 });
 
 export type MemberSchema = z.infer<typeof memberSchema>;

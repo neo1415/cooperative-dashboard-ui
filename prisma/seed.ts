@@ -263,7 +263,7 @@ async function main() {
       dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
       sex: 'MALE',
       cooperativeId: cooperative.id, // Linking to Cooperative
-      img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
+      // img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
     },
   });
 
@@ -277,7 +277,7 @@ async function main() {
       dateOfBirth:  new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
       sex: 'FEMALE',
       cooperativeId: cooperative.id, // Linking to Cooperative
-      img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
+      // img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
     },
   });
 

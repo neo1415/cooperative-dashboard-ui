@@ -81,7 +81,7 @@ model Cooperative {
 
 model Member {
   id                String   @id @default(uuid())
-  img               String // <-- This field is required
+  // img               String // <-- This field is required
   surname           String
   firstName         String
   middleName        String
