@@ -83,6 +83,7 @@ model Member {
   id                String   @id @default(uuid())
   // img               String // <-- This field is required
   surname           String
+   cooperativeId     String?
   firstName         String
   middleName        String
   email             String   @unique
@@ -91,7 +92,6 @@ model Member {
   sex               UserSex
   savings           MemberSavings[] // Relation to MemberSavings
   cooperative       Cooperative? @relation(fields: [cooperativeId], references: [id])
-  cooperativeId     String?
   memberDetails     MembersDetails?  // One-to-one relation with MemberDetails (KYC)
   roles             Role[]          // One-to-many relation with Role
   debtors           Debtor[]        // One-to-many relation with Debtor
@@ -103,6 +103,7 @@ model Member {
 
 model MembersDetails {
 id                String   @id @default(uuid())
+ cooperativeId     String?
 member            Member   @relation(fields: [memberId], references: [id]) // One-to-one relation
 memberId          String   @unique
 surname           String
