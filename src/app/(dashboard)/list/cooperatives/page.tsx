@@ -174,16 +174,16 @@ const renderRow = (item: CooperativeList) => (
     </td>
   
     <td className="hidden md:table-cell">{item.id}</td>
-<td className="hidden md:table-cell">{item.registrationNumber}</td>
+{/* <td className="hidden md:table-cell">{item.registrationNumber}</td> */}
 {/* <td className="hidden md:table-cell">{item.dateOfIncorporation}</td> */}
-<td className="hidden md:table-cell">{item.address}</td>
+{/* <td className="hidden md:table-cell">{item.address}</td>
 <td className="hidden md:table-cell">{item.email}</td>
 <td className="hidden md:table-cell">{item.phoneNumber}</td>
 <td className="hidden md:table-cell">{item.totalSavings}</td>
 <td className="hidden md:table-cell">{item.totalDebt}</td>
 <td className="hidden md:table-cell">{item.totalLoansRequested}</td>
 <td className="hidden md:table-cell">{item.totalLoansApproved}</td>
-<td className="hidden md:table-cell">{item.totalProfit}</td>
+<td className="hidden md:table-cell">{item.totalProfit}</td> */}
 {/* <td className="hidden md:table-cell">{item.directorName}</td>
 <td className="hidden md:table-cell">{item.directorPosition}</td>
 <td className="hidden md:table-cell">{item.directorEmail}</td>

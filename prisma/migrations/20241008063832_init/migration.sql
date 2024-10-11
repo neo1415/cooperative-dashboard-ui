@@ -23,10 +23,18 @@ CREATE TABLE "Admin" (
 CREATE TABLE "Cooperative" (
     "id" TEXT NOT NULL,
     "cooperativeName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Cooperative_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CooperativeDetails" (
+    "cooperativeId" TEXT,
     "registrationNumber" TEXT NOT NULL,
     "dateOfIncorporation" TIMESTAMP(3) NOT NULL,
     "address" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
     "totalSavings" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalDebt" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -48,23 +56,16 @@ CREATE TABLE "Cooperative" (
     "directorIDNumber" TEXT NOT NULL,
     "directorIssuedDate" TEXT NOT NULL,
     "directorExpiryDate" TEXT NOT NULL,
-    "directorSourceOfIncome" "SourceOFincome" NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Cooperative_pkey" PRIMARY KEY ("id")
+    "directorSourceOfIncome" "SourceOFincome" NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "Member" (
     "id" TEXT NOT NULL,
-    "img" TEXT NOT NULL,
     "surname" TEXT NOT NULL,
-    "firstName" TEXT NOT NULL,
-    "middleName" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "dateOfBirth" TIMESTAMP(3) NOT NULL,
-    "sex" "UserSex" NOT NULL,
     "cooperativeId" TEXT,
+    "firstName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
 
     CONSTRAINT "Member_pkey" PRIMARY KEY ("id")
 );
@@ -72,6 +73,7 @@ CREATE TABLE "Member" (
 -- CreateTable
 CREATE TABLE "MembersDetails" (
     "id" TEXT NOT NULL,
+    "cooperativeId" TEXT,
     "memberId" TEXT NOT NULL,
     "surname" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
@@ -276,16 +278,16 @@ CREATE UNIQUE INDEX "Admin_username_key" ON "Admin"("username");
 CREATE UNIQUE INDEX "Cooperative_cooperativeName_key" ON "Cooperative"("cooperativeName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cooperative_registrationNumber_key" ON "Cooperative"("registrationNumber");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Cooperative_email_key" ON "Cooperative"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cooperative_phoneNumber_key" ON "Cooperative"("phoneNumber");
+CREATE UNIQUE INDEX "CooperativeDetails_registrationNumber_key" ON "CooperativeDetails"("registrationNumber");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cooperative_directorEmail_key" ON "Cooperative"("directorEmail");
+CREATE UNIQUE INDEX "CooperativeDetails_phoneNumber_key" ON "CooperativeDetails"("phoneNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CooperativeDetails_directorEmail_key" ON "CooperativeDetails"("directorEmail");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Member_email_key" ON "Member"("email");
@@ -304,6 +306,9 @@ CREATE UNIQUE INDEX "MembersDetails_email_key" ON "MembersDetails"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "MembersFinancialPosition_memberId_key" ON "MembersFinancialPosition"("memberId");
+
+-- AddForeignKey
+ALTER TABLE "CooperativeDetails" ADD CONSTRAINT "CooperativeDetails_cooperativeId_fkey" FOREIGN KEY ("cooperativeId") REFERENCES "Cooperative"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Member" ADD CONSTRAINT "Member_cooperativeId_fkey" FOREIGN KEY ("cooperativeId") REFERENCES "Cooperative"("id") ON DELETE SET NULL ON UPDATE CASCADE;

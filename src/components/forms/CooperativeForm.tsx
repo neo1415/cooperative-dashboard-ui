@@ -7,10 +7,11 @@ import SelectField from "../SelectInput";
 import { cooperativeSchema, CooperativeSchema } from "@/lib/formValidationSchemas";
 import { submitCcoperativeForm } from "@/lib/actions";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 
-
-const CooperativeForm= () => {
+const CooperativeForm = () => {
   const {
     register,
     handleSubmit,
@@ -18,11 +19,43 @@ const CooperativeForm= () => {
   } = useForm<CooperativeSchema>({
     resolver: zodResolver(cooperativeSchema),
   });
+  
+  const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  const onSubmit = handleSubmit(async (data) => {
+    // Retrieve userId instead of cooperativeId if that's the correct key
+    const cooperativeId = localStorage.getItem('userId'); // Use 'userId' instead
+    
+    if (!cooperativeId) {
+      setSubmitError('Error: Cooperative ID not found. Please log in again.');
+      return;
+    }
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    submitCcoperativeForm(data)
+    const payload = { cooperativeId, ...data };
+
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+    try {
+      const response = await fetch(`${serverURL}/cooperative-kyc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        router.push('/');
+      } else {
+        const errorData = await response.json();
+        setSubmitError(errorData.error || 'Failed to submit cooperative KYC form');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitError('Error connecting to the server.');
+    }
   });
+
+
+  
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">Let is Know More About You</h1>

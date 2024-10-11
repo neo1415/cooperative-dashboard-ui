@@ -198,11 +198,16 @@ async function main() {
   
   const cooperative = await prisma.cooperative.create({
     data: {
-      cooperativeName: 'Sample Cooperative',
+      cooperativeName: 'Sample Cooperative',   
+      email: 'contact@samplecooperative.com',
+    },
+  });
+
+  const cooperativeDetails = await prisma.cooperativeDetails.create({
+    data:{
       registrationNumber: 'REG123456',
       dateOfIncorporation: new Date('2020-01-01'),
       address: '123 Main Street',
-      email: 'contact@samplecooperative.com',
       phoneNumber: '1234567890',
       totalMembers : "520",
       totalDebtors:'180',
@@ -225,10 +230,9 @@ async function main() {
       directorExpiryDate: '2032-05-01',
       directorSourceOfIncome: 'SALARYORBUSINESSINCOME', // Make sure this matches your enum as well
       totalProfit: 10000,
-
-    },
-  });
-
+      cooperativeId: cooperative.id,
+    }
+  })
   // Create a Director
   // const director = await prisma.director.create({
   //   data: {
@@ -257,11 +261,11 @@ async function main() {
     data: {
       surname: 'Smith',
       firstName: 'John',
-      middleName: 'A',
+      // middleName: 'A',
       email: 'john.smith@example.com',
-      // phoneNumber: '111222333',
-      dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
-      sex: 'MALE',
+      // // phoneNumber: '111222333',
+      // dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
+      // sex: 'MALE',
       cooperativeId: cooperative.id, // Linking to Cooperative
       // img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
     },
@@ -271,11 +275,11 @@ async function main() {
     data: {
       surname: 'Doe',
       firstName: 'Jane',
-      middleName: 'B',
+      // middleName: 'B',
       email: 'jane.doe@example.com',
-      // phoneNumber: '444555666',
-      dateOfBirth:  new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
-      sex: 'FEMALE',
+      // // phoneNumber: '444555666',
+      // dateOfBirth:  new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
+      // sex: 'FEMALE',
       cooperativeId: cooperative.id, // Linking to Cooperative
       // img: 'https://example.com/image.jpg', // Add a placeholder or actual image URL
     },

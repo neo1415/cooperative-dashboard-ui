@@ -24,10 +24,24 @@ model Admin {
 model Cooperative {
   id                    String   @id @default(uuid())
   cooperativeName       String   @unique
+  email                 String   @unique
+  cooperativeDetails    CooperativeDetails[]
+  members               Member[]      // One-to-many relation to members
+  savings               MemberSavings[] // One-to-many relation to MemberSavings
+  loansRequested        LoansRequested[] // One-to-many relation to LoansRequested
+  loansApproved         LoansApproved[] // One-to-many relation to LoansApproved
+  debtors               Debtor[]         // One-to-many relation to Debtor
+  roles                 Role[]         // One-to-many relation to Role
+
+  createdAt             DateTime @default(now())
+}
+
+model CooperativeDetails{
+   cooperativeId     String?
   registrationNumber    String   @unique
   dateOfIncorporation   DateTime
+  cooperative       Cooperative? @relation(fields: [cooperativeId], references: [id])
   address               String
-  email                 String   @unique
   phoneNumber           String   @unique
   totalSavings          Float   @default(0)       // Aggregate of all members' savings
   totalDebt             Float     @default(0)     // Aggregate of all loans/debts
@@ -50,46 +64,16 @@ model Cooperative {
   directorIssuedDate        String
   directorExpiryDate        String
   directorSourceOfIncome    SourceOFincome
-  members               Member[]      // One-to-many relation to members
-  savings               MemberSavings[] // One-to-many relation to MemberSavings
-  loansRequested        LoansRequested[] // One-to-many relation to LoansRequested
-  loansApproved         LoansApproved[] // One-to-many relation to LoansApproved
-  debtors               Debtor[]         // One-to-many relation to Debtor
-  roles                 Role[]         // One-to-many relation to Role
-  createdAt             DateTime @default(now())
 }
 
-// model Director {
-//   id                        String   @id @default(uuid())
-//   directorName              String
-//   directorPosition          String
-//   directorEmail             String   @unique
-//   directorPhoneNumber       String
-//   directorDateOfBirth       DateTime  // Fixed typo
-//   directorPlaceOfBirth      String
-//   directorNationality       String
-//   directorOccupation        String
-//   directorBVNNumber         String
-//   directorIDType            IDTYPE
-//   directorIDNumber          String
-//   directorIssuedDate        String
-//   directorExpiryDate        String
-//   directorSourceOfIncome    SourceOFincome  // Fixed typo
-//   cooperative               Cooperative @relation(fields: [cooperativeId], references: [id])
-//   cooperativeId             String
-// }
 
 model Member {
   id                String   @id @default(uuid())
   // img               String // <-- This field is required
   surname           String
-   cooperativeId     String?
+  cooperativeId     String?
   firstName         String
-  middleName        String
   email             String   @unique
-  // phoneNumber       String   @unique
-  dateOfBirth       DateTime
-  sex               UserSex
   savings           MemberSavings[] // Relation to MemberSavings
   cooperative       Cooperative? @relation(fields: [cooperativeId], references: [id])
   memberDetails     MembersDetails?  // One-to-one relation with MemberDetails (KYC)

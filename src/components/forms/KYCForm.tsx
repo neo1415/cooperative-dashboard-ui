@@ -6,6 +6,8 @@ import InputField from "../InputField";
 import SelectField from "../SelectInput";
 import { memberSchema, MemberSchema } from "@/lib/formValidationSchemas";
 import { submitMemberForm } from "@/lib/actions";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 
 const KYCForm = () => {
@@ -17,9 +19,38 @@ const KYCForm = () => {
     resolver: zodResolver(memberSchema),
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    submitMemberForm(data)
+  const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  const onSubmit = handleSubmit(async (data) => {
+    // Retrieve userId instead of cooperativeId if that's the correct key
+    const memberId = localStorage.getItem('userId'); // Use 'userId' instead
+    
+    if (!memberId) {
+      setSubmitError('Error: Member ID not found. Please log in again.');
+      return;
+    }
+
+    const payload = { memberId, ...data };
+
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+    try {
+      const response = await fetch(`${serverURL}/member-kyc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        router.push('/');
+      } else {
+        const errorData = await response.json();
+        setSubmitError(errorData.error || 'Failed to submit member KYC form');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitError('Error connecting to the server.');
+    }
   });
 
   return (

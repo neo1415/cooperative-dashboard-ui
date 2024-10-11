@@ -1,20 +1,32 @@
 // lib/actions.ts (Server-side)
 import { revalidatePath } from "next/cache";
-import { CooperativeSchema, MemberSchema } from "./formValidationSchemas";
+import {  CooperativeSchema, MemberSchema } from "./formValidationSchemas";
 import prisma from "./prisma";
 
 export const submitCcoperativeForm = async (data: CooperativeSchema) => {
+  const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+  const CooperativeKYCEndpoint = `${serverURL}/cooperative-kyc`;
   try {
-    await prisma.cooperative.create({
-      data: {
-        ...data,
+    const response = await fetch(CooperativeKYCEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(data),
     });
-    revalidatePath('/list/cooperatives');
+
+    if (!response.ok) {
+      throw new Error('Error submitting cooperative form');
+    }
+
+    const result = await response.json();
+    console.log('Successfully submitted:', result);
   } catch (err) {
-    console.error(err);
+    console.error('Error submitting form:', err);
   }
 };
+
+
 
 export const submitMemberForm = async (data: MemberSchema) => {
   try {

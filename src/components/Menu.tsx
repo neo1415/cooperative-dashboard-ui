@@ -1,3 +1,6 @@
+
+"use client"
+
 const menuItems = [
   {
     title: "MENU",
@@ -6,7 +9,7 @@ const menuItems = [
         icon: "/home.png",
         label: "Home",
         href: "/",
-        visible: ["super-admin", "admin", "member", "auditor", "cooperative-admin", "cooperative-auditor","cooperative-member"],
+        visible: ["super-admin", "admin", "member", "auditor", "cooperative-admin", "cooperative-auditor"],
       },
       {
         icon: "/attendance.png",
@@ -19,6 +22,12 @@ const menuItems = [
         label: "Members",
         href: "/list/users",
         visible: ["admin", "super-admin", "auditor","cooperative-admin"],
+      },
+      {
+        icon: "/teacher.png",
+        label: "Request Loans",
+        href: "/list/loanForm",
+        visible: ["admin", "super-admin","auditor","member"],
       },
       {
         icon: "/teacher.png",
@@ -138,37 +147,50 @@ const menuItems = [
   },
 ];
 
-import { role } from '@/lib/data';
+import { canAccessMenu, fetchUserRole } from '@/lib/roleUtils';
 import Image from 'next/image';
 import Link from 'next/link';
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const Menu = () => {
-  return (
-    <div className="mt-4 text-sm">
-      {menuItems.map((i) => (
-        <div className="flex flex-col gap-2" key={i.title}>
-          <span className="hidden lg:block text-gray-400 font-light my-4">
-            {i.title}
-          </span>
-          {i.items.map((item) => {
-            if (item.visible.includes(role)) {
-              return (
-                <Link
-                  href={item.href}
-                  key={item.label}
-                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-neoSkyLight"
-                >
-                  <Image src={item.icon} alt="iteem icon" width={20} height={20} />
-                  <span className="hidden lg:block">{item.label}</span>
-                </Link>
-              );
-            }
-          })}
-        </div>
-      ))}
-    </div>
-  );
+const [role, setRole] = useState<string | null>(null);
+
+// Fetch user role on component mount
+useEffect(() => {
+  const getUserRole = async () => {
+    const userRole = await fetchUserRole();
+    setRole(userRole);
+  };
+
+  getUserRole();
+}, []);
+
+return (
+  <div className="mt-4 text-sm">
+    {menuItems.map((i) => (
+      <div className="flex flex-col gap-2" key={i.title}>
+        <span className="hidden lg:block text-gray-400 font-light my-4">
+          {i.title}
+        </span>
+        {i.items.map((item) => {
+          // Use the utility function to check if the user has access to the menu item
+          if (canAccessMenu(role, item.visible)) {
+            return (
+              <Link
+                href={item.href}
+                key={item.label}
+                className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-neoSkyLight"
+              >
+                <Image src={item.icon} alt="item icon" width={20} height={20} />
+                <span className="hidden lg:block">{item.label}</span>
+              </Link>
+            );
+          }
+        })}
+      </div>
+    ))}
+  </div>
+);
 };
 
 export default Menu
