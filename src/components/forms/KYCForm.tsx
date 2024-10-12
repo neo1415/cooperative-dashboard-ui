@@ -60,18 +60,7 @@ const KYCForm = () => {
         Personal Information
       </span>
       <div className="flex justify-between flex-wrap gap-4">
-      <InputField
-          label="Surname"
-          name="surname"
-          register={register}
-          error={errors?.surname}
-        />
-      <InputField
-        label="First Name"
-        name="firstName"
-        register={register}
-        error={errors?.firstName}
-      />
+
       <InputField
         label="Middle Name"
         name="middleName"
@@ -103,12 +92,7 @@ const KYCForm = () => {
            register={register}
         error={errors?.telephone2}
       />
-      <InputField
-        label="Email"
-        name="email"
-        register={register}
-        error={errors?.email}
-      />
+
       <InputField
         label="Date of Birth"
         name="dateOfBirth"

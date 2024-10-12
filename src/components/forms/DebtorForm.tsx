@@ -5,16 +5,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputField from "../InputField";
 import Image from "next/image";
+import SelectField from "../SelectInput";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-const schema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Username must be at least 3 characters long!" })
-    .max(20, { message: "Username must be at most 20 characters long!" }),
+const loanSchema = z.object({
   email: z.string().email({ message: "Invalid email address!" }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters long!" }),
   membersRegNo: z.string().min(1, { message: "Registration number is required!" }),
   firstName: z.string().min(1, { message: "First name is required!" }),
   surname: z.string().min(1, { message: "surname is required!" }),
@@ -40,25 +36,48 @@ const schema = z.object({
   img: z.instanceof(File, { message: "Image is required" }),
 });
 
-type Inputs = z.infer<typeof schema>;
+type LoanSchema = z.infer<typeof loanSchema>;
 
-const DebtorForm = ({
-  type,
-  data,
-}: {
-  type: "create" | "update";
-  data?: any;
-}) => {
+const DebtorForm = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<Inputs>({
-    resolver: zodResolver(schema),
+  } = useForm<LoanSchema>({
+    resolver: zodResolver(loanSchema),
   });
+  const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  const onSubmit = handleSubmit(async (data) => {
+    // Retrieve userId instead of cooperativeId if that's the correct key
+    const cooperativeId = localStorage.getItem('userId'); // Use 'userId' instead
+    
+    if (!cooperativeId) {
+      setSubmitError('Error: Cooperative ID not found. Please log in again.');
+      return;
+    }
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+    const payload = { cooperativeId, ...data };
+
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+    try {
+      const response = await fetch(`${serverURL}/loan-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        router.push('/');
+      } else {
+        const errorData = await response.json();
+        setSubmitError(errorData.error || 'Failed to submit cooperative KYC form');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitError('Error connecting to the server.');
+    }
   });
 
   return (
@@ -68,228 +87,178 @@ const DebtorForm = ({
         Authentication Information
       </span>
       <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Username"
-          name="username"
-          defaultValue={data?.username}
-          register={register}
-          error={errors?.username}
-        />
-        <InputField
-          label="Email"
-          name="email"
-          defaultValue={data?.email}
-          register={register}
-          error={errors?.email}
-        />
-        <InputField
-          label="Password"
-          name="password"
-          type="password"
-          defaultValue={data?.password}
-          register={register}
-          error={errors?.password}
-        />
-      </div>
-      <span className="text-xs text-gray-400 font-medium">
-        Personal Information
-      </span>
-      <div className="flex justify-between flex-wrap gap-4">
+  <InputField
+    label="Email"
+    name="email"
+    register={register}
+    error={errors?.email}
+  />
+</div>
 
-        <InputField
-          label="Members Reg.No"
-          name="membersRegNo"
-          defaultValue={data?.membersRegNo}
-          register={register}
-          error={errors.membersRegNo}
-        />
+<span className="text-xs text-gray-400 font-medium">
+  Personal Information
+</span>
+<div className="flex justify-between flex-wrap gap-4">
+  <InputField
+    label="Members Reg.No"
+    name="membersRegNo"
+    register={register}
+    error={errors?.membersRegNo}
+  />
 
-        <InputField
-          label="Surname"
-          name="surname"
-          defaultValue={data?.surname}
-          register={register}
-          error={errors.surname}
-        />
-        <InputField
-          label="First Name"
-          name="firstName"
-          defaultValue={data?.firstName}
-          register={register}
-          error={errors.firstName}
-        />
-        <InputField
-          label="Middle Name"
-          name="middleName"
-          defaultValue={data?.lastName}
-          register={register}
-          error={errors.middleName}
-        />
-        <InputField
-          label="Date Of Entry"
-          name="dateOfEntry"
-          defaultValue={data?.dateOfEntry}
-          register={register}
-          error={errors.dateOfEntry}
-          type="date"
-        />
-        <InputField
-          label="TelePhone 1"
-          name="telephone1"
-          defaultValue={data?.telephone1}
-          register={register}
-          error={errors.telephone1}
-        />
-        <InputField
-          label="TelePhone 2"
-          name="telephone2"
-          defaultValue={data?.telephone2}
-          register={register}
-          error={errors.telephone2}
-        />
-        <InputField
-          label="Email"
-          name="email"
-          defaultValue={data?.email}
-          register={register}
-          error={errors?.email}
-        />
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Marital Status</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("sex")}
-            defaultValue={data?.marital}
-          >
-            <option value="male">Married</option>
-            <option value="single">Single</option>
-            <option value="widowed">Widowed</option>
-            <option value="engaged">Engaged</option>
-          </select>
-          {errors.sex?.message && (
-            <p className="text-xs text-red-400">
-              {errors.sex.message.toString()}
-            </p>
-          )}
-        </div>
+  <InputField
+    label="Surname"
+    name="surname"
+    register={register}
+    error={errors?.surname}
+  />
 
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Sex</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("sex")}
-            defaultValue={data?.sex}
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          {errors.sex?.message && (
-            <p className="text-xs text-red-400">
-              {errors.sex.message.toString()}
-            </p>
-          )}
-        </div>
+  <InputField
+    label="First Name"
+    name="firstName"
+    register={register}
+    error={errors?.firstName}
+  />
 
-        <InputField
-          label="Occupation"
-          name="occupation"
-          defaultValue={data?.occupation}
-          register={register}
-          error={errors.occupation}
-        />
+  <InputField
+    label="Middle Name"
+    name="middleName"
+    register={register}
+    error={errors?.middleName}
+  />
 
-        <InputField
-          label="Business"
-          name="business"
-          defaultValue={data?.business}
-          register={register}
-          error={errors.business}
-        />
+  <InputField
+    label="Date Of Entry"
+    name="dateOfEntry"
+    type="date"
+    register={register}
+    error={errors?.dateOfEntry}
+  />
 
-        <InputField
-          label="Address"
-          name="address"
-          defaultValue={data?.address}
-          register={register}
-          error={errors.address}
-        />
-        <InputField
-          label="Local Government Area"
-          name="lga"
-          defaultValue={data?.lga}
-          register={register}
-          error={errors.lga}
-        />
+  <InputField
+    label="Telephone 1"
+    name="telephone1"
+    register={register}
+    error={errors?.telephone1}
+  />
 
-        <InputField
-          label="State"
-          name="state"
-          defaultValue={data?.state}
-          register={register}
-          error={errors.state}
-        />
+  <InputField
+    label="Telephone 2"
+    name="telephone2"
+    register={register}
+    error={errors?.telephone2}
+  />
 
-        <InputField
-          label="Permanent Home Address"
-          name="homeAddress"
-          defaultValue={data?.homeAddress}
-          register={register}
-          error={errors.homeAddress}
-        />
+  <SelectField
+    label="Marital Status"
+    name="marital"
+    register={register}
+    options={[
+      { value: "MARRIED", label: "Married" },
+      { value: "SINGLE", label: "Single" },
+      { value: "WIDOWED", label: "Widowed" },
+      { value: "ENGAGED", label: "Engaged" },
+    ]}
+    error={errors?.marital}
+  />
 
-        <InputField
-          label="State of Origin"
-          name="stateOfOrigin"
-          defaultValue={data?.stateOfOrigin}
-          register={register}
-          error={errors.stateOfOrigin}
-        />
+  <SelectField
+    label="Sex"
+    name="sex"
+    register={register}
+    error={errors?.sex}
+    options={[
+      { value: "MALE", label: "Male" },
+      { value: "FEMALE", label: "Female" },
+    ]}
+  />
 
-        <InputField
-          label="LGA/LCDA"
-          name="lga1"
-          defaultValue={data?.lga2}
-          register={register}
-          error={errors.lga2}
-          />
+  <InputField
+    label="Occupation"
+    name="occupation"
+    register={register}
+    error={errors?.occupation}
+  />
 
-        <InputField
-          label="Amount Paid"
-          name="amountPaid"
-          defaultValue={data?.amountPaid}
-          register={register}
-          error={errors.amountPaid}
-          type="date"
-        />
+  <InputField
+    label="Business"
+    name="business"
+    register={register}
+    error={errors?.business}
+  />
 
-        <InputField
-          label="Next of Kin Name"
-          name="kinName"
-          defaultValue={data?.kinName}
-          register={register}
-          error={errors.kinName}
-          type="date"
-        />
+  <InputField
+    label="Address"
+    name="address"
+    register={register}
+    error={errors?.address}
+  />
 
-        <InputField
-          label="Next of Kin Phone"
-          name="kinPhone"
-          defaultValue={data?.kinPhone}
-          register={register}
-          error={errors.kinPhone}
-          type="date"
-        />
+  <InputField
+    label="Local Government Area"
+    name="lga"
+    register={register}
+    error={errors?.lga}
+  />
 
-        <InputField
-          label="Sponsor"
-          name="sponsor"
-          defaultValue={data?.sponsor}
-          register={register}
-          error={errors.sponsor}
-          type="date"
-        />
+  <InputField
+    label="State"
+    name="state"
+    register={register}
+    error={errors?.state}
+  />
 
-        <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
+  <InputField
+    label="Permanent Home Address"
+    name="homeAddress"
+    register={register}
+    error={errors?.homeAddress}
+  />
+
+  <InputField
+    label="State of Origin"
+    name="stateOfOrigin"
+    register={register}
+    error={errors?.stateOfOrigin}
+  />
+
+  <InputField
+    label="LGA/LCDA"
+    name="lga"
+    register={register}
+    error={errors?.lga}
+  />
+
+  <InputField
+    label="Amount Paid"
+    name="amountPaid"
+    type="number"
+    register={register}
+    error={errors?.amountPaid}
+  />
+
+  <InputField
+    label="Next of Kin Name"
+    name="kinName"
+    register={register}
+    error={errors?.kinName}
+  />
+
+  <InputField
+    label="Next of Kin Phone"
+    name="kinPhone"
+    register={register}
+    error={errors?.kinPhone}
+  />
+
+  <InputField
+    label="Sponsor"
+    name="sponsor"
+    register={register}
+    error={errors?.sponsor}
+  />
+
+        {/* <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
           <label
             className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
             htmlFor="img"
@@ -303,10 +272,11 @@ const DebtorForm = ({
               {errors.img.message.toString()}
             </p>
           )}
-        </div>
+        </div> */}
       </div>
       <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+        {/* {type === "create" ? "Create" : "Update"} */}
+        submit
       </button>
     </form>
   );

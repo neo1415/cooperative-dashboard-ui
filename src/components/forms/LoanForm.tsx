@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputField from "../InputField";
 import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const schema = z.object({
   id: z.string().uuid().optional(), // The id will be automatically generated with a default uuid
@@ -43,9 +45,60 @@ const LoanForm = () => {
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const onSubmit = handleSubmit(async (data) => {
+    const cooperativeId = localStorage.getItem('userId'); // Assuming this is how cooperativeId is stored
+    if (!cooperativeId) {
+      setSubmitError('Error: Cooperative ID not found. Please log in again.');
+      return;
+    }
+  
+    const surety1Details = {
+      name: data.nameOfSurety1,
+      membersNo: data.surety1MembersNo,
+      telePhone: data.surety1telePhone
+    };
+  
+    const surety2Details = {
+      name: data.nameOfSurety2,
+      membersNo: data.surety2MembersNo,
+      telePhone: data.surety2telePhone
+    };
+  
+    const payload = { 
+      cooperativeId, 
+      loanAmount: data.amountRequired, 
+      loanPurpose: data.purposeOfLoan, 
+      surety1Details, 
+      surety2Details 
+    };
+  
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+  
+    try {
+      const response = await fetch(`${serverURL}/loan-request`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Assuming token is stored here
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (response.ok) {
+        router.push('/success'); // Redirect after successful loan request
+      } else {
+        const errorData = await response.json();
+        setSubmitError(errorData.error || 'Failed to submit loan request');
+      }
+    } catch (error) {
+      console.error('Error submitting loan request:', error);
+      setSubmitError('Error connecting to the server.');
+    }
   });
+  
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>

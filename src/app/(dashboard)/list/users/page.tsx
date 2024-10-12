@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import axios from 'axios';
+import { auth } from '@/app/api/config';
 
 interface Member {
   id: string;
@@ -38,24 +39,45 @@ const MembersListPage: React.FC = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-      try {
-        const response = await fetch(`${serverURL}/members`); // Fetch the data from the backend
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);  // Check for non-2xx status
-        }
+      
+      // Listen to Firebase auth state
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          try {
+            const token = await user.getIdToken();  // Get Firebase ID token from the current user
   
-        const data: Member[] = await response.json();  // Parse the response as JSON
-        setMembers(data);
-        setFilteredMembers(data);
-        console.log(data)
-      } catch (error) {
-        console.error('Error fetching members:', error);
-      }
+            const response = await fetch(`${serverURL}/members`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,  // Send token in Authorization header
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (!response.ok) {
+              throw new Error('Failed to fetch members');
+            }
+  
+            const fetchedMembers = await response.json();
+            console.log('Members:', fetchedMembers);  // Log members for debugging
+  
+            // Set the members state
+            setMembers(fetchedMembers);
+            setFilteredMembers(fetchedMembers); // Initialize the filtered list with all members
+          } catch (error) {
+            console.error('Error fetching members:', error);
+          }
+        } else {
+          console.log('No user logged in');
+        }
+      });
+  
+      return () => unsubscribe(); // Cleanup the listener on unmount
     };
   
     fetchMembers();
   }, []);
+  
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();

@@ -26,7 +26,7 @@ const menuItems = [
       {
         icon: "/teacher.png",
         label: "Request Loans",
-        href: "/list/loanForm",
+        href: "/loanForm",
         visible: ["admin", "super-admin","auditor","member"],
       },
       {
@@ -150,47 +150,64 @@ const menuItems = [
 import { canAccessMenu, fetchUserRole } from '@/lib/roleUtils';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 
 const Menu = () => {
-const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [kycCompleted, setKycCompleted] = useState<boolean>(false);
+  const router = useRouter();
 
-// Fetch user role on component mount
-useEffect(() => {
-  const getUserRole = async () => {
-    const userRole = await fetchUserRole();
-    setRole(userRole);
+  // Fetch user role and KYC status on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { role, kycCompleted } = await fetchUserRole();
+      setRole(role);
+      setKycCompleted(kycCompleted);
+    };
+    fetchUserData();
+  }, []);
+
+  // Handle menu item click
+  const handleMenuItemClick = (href: string, requiresKycCheck: boolean) => {
+    console.log("KYC check required:", requiresKycCheck);  // Log if KYC check is required
+    console.log("KYC Completed state:", kycCompleted);  // Log the current state of kycCompleted
+
+    if (requiresKycCheck && !kycCompleted) {
+      router.push('/member-form');  // Redirect to /form if KYC is not completed
+    } else {
+      router.push(href);  // Otherwise, go to the normal link
+    }
   };
 
-  getUserRole();
-}, []);
-
-return (
-  <div className="mt-4 text-sm">
-    {menuItems.map((i) => (
-      <div className="flex flex-col gap-2" key={i.title}>
-        <span className="hidden lg:block text-gray-400 font-light my-4">
-          {i.title}
-        </span>
-        {i.items.map((item) => {
-          // Use the utility function to check if the user has access to the menu item
-          if (canAccessMenu(role, item.visible)) {
-            return (
-              <Link
-                href={item.href}
-                key={item.label}
-                className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-neoSkyLight"
-              >
-                <Image src={item.icon} alt="item icon" width={20} height={20} />
-                <span className="hidden lg:block">{item.label}</span>
-              </Link>
-            );
-          }
-        })}
-      </div>
-    ))}
-  </div>
-);
+  return (
+    <div className="mt-4 text-sm">
+      <p>Current role: {role}</p> {/* Display the role */}
+      <p>KYC Completed: {kycCompleted ? "Yes" : "No"}</p> {/* Display KYC completion status */}
+      {menuItems.map((i) => (
+        <div className="flex flex-col gap-2" key={i.title}>
+          <span className="hidden lg:block text-gray-400 font-light my-4">
+            {i.title}
+          </span>
+          {i.items.map((item) => {
+            if (canAccessMenu(role, item.visible)) {
+              const requiresKycCheck = item.label === "Request Loans"; // Check if it's the "Request Loans" item
+              return (
+                <div
+                  key={item.label}
+                  onClick={() => handleMenuItemClick(item.href, requiresKycCheck)}
+                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-neoSkyLight cursor-pointer"
+                >
+                  <Image src={item.icon} alt="item icon" width={20} height={20} />
+                  <span className="hidden lg:block">{item.label}</span>
+                </div>
+              );
+            }
+          })}
+        </div>
+      ))}
+    </div>
+  );
 };
 
-export default Menu
+export default Menu;

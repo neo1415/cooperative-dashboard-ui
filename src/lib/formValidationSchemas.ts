@@ -95,8 +95,8 @@ export type CooperativeSchema = z.infer<typeof cooperativeSchema>;
 
 
 export const memberSchema = z.object({
-  surname: z.string().min(1, { message: "Surname is required!" }),
-  firstName: z.string().min(1, { message: "First Name is required!" }),
+  // surname: z.string().min(1, { message: "Surname is required!" }),
+  // firstName: z.string().min(1, { message: "First Name is required!" }),
   middleName: z.string().min(1, { message: "Middle Name is required!" }),
   dateOfEntry:z.preprocess((arg) => {
     if (typeof arg === 'string' || arg instanceof Date) {
@@ -113,7 +113,7 @@ export const memberSchema = z.object({
     .string()
     .min(1, { message: "Telephone 2 is required!" })
     .max(15, { message: "Telephone 2 must be a valid number!" }),
-  email: z.string().email({ message: "Invalid email address!" }),
+  // email: z.string().email({ message: "Invalid email address!" }),
   dateOfBirth: z.preprocess((arg) => {
     if (typeof arg === 'string' || arg instanceof Date) {
       return new Date(arg);
