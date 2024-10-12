@@ -4,7 +4,6 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { debtorsData, role} from "@/lib/data";
-import { MemberSavings } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
