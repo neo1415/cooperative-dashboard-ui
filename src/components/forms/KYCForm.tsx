@@ -8,6 +8,7 @@ import { memberSchema, MemberSchema } from "@/lib/formValidationSchemas";
 import { submitMemberForm } from "@/lib/actions";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 
 const KYCForm = () => {
@@ -23,35 +24,35 @@ const KYCForm = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   
   const onSubmit = handleSubmit(async (data) => {
-    // Retrieve userId instead of cooperativeId if that's the correct key
-    const memberId = localStorage.getItem('userId'); // Use 'userId' instead
-    
+    const memberId = localStorage.getItem('userId');
+console.log("Retrieved memberId:", memberId); // Log memberId to check if it's correctly retrieved
+
     if (!memberId) {
       setSubmitError('Error: Member ID not found. Please log in again.');
       return;
     }
-
+  
     const payload = { memberId, ...data };
-
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+  
     try {
-      const response = await fetch(`${serverURL}/member-kyc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
+      const response = await axios.post(`${serverURL}/member-kyc`, payload);
+  
+      if (response.status === 200) {
         router.push('/');
       } else {
-        const errorData = await response.json();
-        setSubmitError(errorData.error || 'Failed to submit member KYC form');
+        setSubmitError(response.data.error || 'Failed to submit member KYC form');
       }
-    } catch (error) {
+    } catch (error: any) { // Simplified error handling
       console.error('Error submitting form:', error);
-      setSubmitError('Error connecting to the server.');
+      setSubmitError(
+        error.response?.data?.error || 
+        error.message || 
+        'Error connecting to the server.'
+      );
     }
   });
+  
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>

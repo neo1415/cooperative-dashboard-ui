@@ -30,7 +30,8 @@ const LoginPage = () => {
   
       // Store the token in localStorage or sessionStorage to use in API requests
       localStorage.setItem('firebaseToken', idToken);
-  
+      localStorage.setItem('userId', user.uid); // Store the Firebase UID
+
       // Get the custom claims
       const idTokenResult = await user.getIdTokenResult(true);
   

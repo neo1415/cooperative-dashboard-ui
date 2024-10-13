@@ -3,216 +3,230 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useEffect, useState } from "react";
 import InputField from "../InputField";
-import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Zod schema to validate the form
 const schema = z.object({
-  id: z.string().uuid().optional(), // The id will be automatically generated with a default uuid
-  surname: z.string().min(1, { message: "Surname is required!" }),
-  firstName: z.string().min(1, { message: "First Name is required!" }),
-  middleName: z.string().optional(), // Optional field
   amountRequired: z.string().min(1, { message: "Amount Required is required!" }),
   purposeOfLoan: z.string().min(1, { message: "Purpose of Loan is required!" }),
-  dateOfApplication: z.string().min(1, { message: "Date of Application is required!" }), // You may want to validate as a date if needed
+  durationOfLoan: z
+    .number()
+    .min(1, { message: "Duration (in months) is required!" })
+    .max(60, { message: "Duration cannot exceed 60 months" }),
   bvnNumber: z
     .string()
     .min(11, { message: "BVN Number must be 11 digits!" })
     .max(11, { message: "BVN Number must be 11 digits!" }),
-  nameOfSurety1: z.string().min(1, { message: "Name of Surety 1 is required!" }),
-  surety1MembersNo: z.string().min(1, { message: "Surety 1 Members No is required!" }),
+  nameOfSurety1: z.string().min(1, { message: "Surety 1 Name is required!" }),
+  surety1MembersNo: z
+    .string()
+    .min(1, { message: "Surety 1 Members No is required!" }),
   surety1telePhone: z
     .string()
-    .min(10, { message: "Surety 1 Phone number must be at least 10 digits!" })
-    .max(15, { message: "Surety 1 Phone number must be less than 15 digits!" }),
-  nameOfSurety2: z.string().min(1, { message: "Name of Surety 2 is required!" }),
-  surety2MembersNo: z.string().min(1, { message: "Surety 2 Members No is required!" }),
+    .min(10, { message: "Surety 1 Phone number must be 10-15 digits!" })
+    .max(15, { message: "Surety 1 Phone number must be 10-15 digits!" }),
+  nameOfSurety2: z.string().min(1, { message: "Surety 2 Name is required!" }),
+  surety2MembersNo: z
+    .string()
+    .min(1, { message: "Surety 2 Members No is required!" }),
   surety2telePhone: z
     .string()
-    .min(10, { message: "Surety 2 Phone number must be at least 10 digits!" })
-    .max(15, { message: "Surety 2 Phone number must be less than 15 digits!" }),
+    .min(10, { message: "Surety 2 Phone number must be 10-15 digits!" })
+    .max(15, { message: "Surety 2 Phone number must be 10-15 digits!" }),
 });
 
 export type Inputs = z.infer<typeof schema>;
 
 const LoanForm = () => {
+  const [memberData, setMemberData] = useState<any>(null); // Store member details
+  const [interestRate] = useState(10); // 10% fixed interest rate
+  const [amountToBePaidBack, setAmountToBePaidBack] = useState(0);
+  const [expectedReimbursementDate, setExpectedReimbursementDate] = useState("");
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<Inputs>({
+    watch,
+  } =  useForm<Inputs>({
     resolver: zodResolver(schema),
+    mode: 'onBlur',
   });
 
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const router = useRouter();
+  const amountRequired = watch("amountRequired");
+  const durationOfLoan = watch("durationOfLoan");
 
-  const onSubmit = handleSubmit(async (data) => {
-    const cooperativeId = localStorage.getItem('userId'); // Assuming this is how cooperativeId is stored
-    if (!cooperativeId) {
-      setSubmitError('Error: Cooperative ID not found. Please log in again.');
-      return;
+  // Fetch member data on component mount
+  useEffect(() => {
+    const fetchMemberData = async () => {
+      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${serverURL}/members`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        setMemberData(data); // Set member data
+      } catch (error) {
+        console.error("Error fetching member details:", error);
+      }
+    };
+    fetchMemberData();
+  }, []);
+
+  // Calculate amount to be paid back and reimbursement date
+  useEffect(() => {
+    if (amountRequired && durationOfLoan) {
+      const principal = parseFloat(amountRequired);
+      const interest = (principal * interestRate * durationOfLoan) / 12 / 100;
+      const total = principal + interest;
+
+      // Set calculated values
+      setAmountToBePaidBack(total);
+
+      const now = new Date();
+      const reimbursementDate = new Date(now.setMonth(now.getMonth() + durationOfLoan));
+      setExpectedReimbursementDate(reimbursementDate.toISOString().split("T")[0]); // Format as YYYY-MM-DD
     }
-  
-    const surety1Details = {
-      name: data.nameOfSurety1,
-      membersNo: data.surety1MembersNo,
-      telePhone: data.surety1telePhone
+  }, [amountRequired, durationOfLoan, interestRate]);
+
+  // Submit loan request
+  const onSubmit = handleSubmit(async (data) => {
+    const cooperativeId = localStorage.getItem("cooperativeId"); // Fetch cooperativeId
+
+    const payload = {
+      ...data,
+      cooperativeId,
+      firstName: memberData?.firstName,
+      surname: memberData?.surname,
+      email: memberData?.email,
+      bvnNumber: memberData?.bvnNumber || data.bvnNumber, // Fallback to form if missing
+      amountToBePaidBack,
+      expectedReimbursementDate,
     };
-  
-    const surety2Details = {
-      name: data.nameOfSurety2,
-      membersNo: data.surety2MembersNo,
-      telePhone: data.surety2telePhone
-    };
-  
-    const payload = { 
-      cooperativeId, 
-      loanAmount: data.amountRequired, 
-      loanPurpose: data.purposeOfLoan, 
-      surety1Details, 
-      surety2Details 
-    };
-  
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-  
     try {
       const response = await fetch(`${serverURL}/loan-request`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Assuming token is stored here
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(payload),
       });
-  
+
       if (response.ok) {
-        router.push('/success'); // Redirect after successful loan request
+        router.push("/success");
       } else {
         const errorData = await response.json();
-        setSubmitError(errorData.error || 'Failed to submit loan request');
+        console.error("Error:", errorData);
       }
     } catch (error) {
-      console.error('Error submitting loan request:', error);
-      setSubmitError('Error connecting to the server.');
+      console.error("Error submitting loan request:", error);
     }
   });
-  
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">Let is Know More About You</h1>
-      <span className="text-xs text-gray-400 font-medium">
-        Authentication Information
-      </span>
+      <h1 className="text-xl font-semibold">Loan Request</h1>
+
+      {/* Auto-fill KYC Data */}
       <div className="flex justify-between flex-wrap gap-4">
-      <InputField
-        label="Surname"
-        name="surname"
-        register={register}
-        error={errors?.surname}
-      />
-      <InputField
-        label="First Name"
-        name="firstName"
-        register={register}
-        error={errors?.firstName}
-      />
-      <InputField
-        label="Middle Name"
-        name="middleName"
-        register={register}
-        error={errors?.middleName}
-      />
-    </div>
-
-    {/* Loan Details Section */}
-    <span className="text-xs text-gray-400 font-medium">Loan Details</span>
-    <div className="flex justify-between flex-wrap gap-4">
-      <InputField
-        label="Amount Required"
-        name="amountRequired"
-        register={register}
-        error={errors?.amountRequired}
-      />
-      <InputField
-        label="Purpose of Loan"
-        name="purposeOfLoan"
-        register={register}
-        error={errors?.purposeOfLoan}
-      />
-      <InputField
-        label="Date of Application"
-        name="dateOfApplication"
-        register={register}
-        error={errors?.dateOfApplication}
-        type="date"
-      />
-    </div>
-
-    {/* BVN and Sureties Section */}
-    <span className="text-xs text-gray-400 font-medium">BVN and Sureties Information</span>
-    <div className="flex justify-between flex-wrap gap-4">
-      <InputField
-        label="BVN Number"
-        name="bvnNumber"
-        register={register}
-        error={errors?.bvnNumber}
-      />
-      <InputField
-        label="Surety 1 Name"
-        name="nameOfSurety1"
-        register={register}
-        error={errors?.nameOfSurety1}
-      />
-      <InputField
-        label="Surety 1 Members No"
-        name="surety1MembersNo"
-        register={register}
-        error={errors?.surety1MembersNo}
-      />
-      <InputField
-        label="Surety 1 Telephone"
-        name="surety1telePhone"
-        register={register}
-        error={errors?.surety1telePhone}
-      />
-      <InputField
-        label="Surety 2 Name"
-        name="nameOfSurety2"
-        register={register}
-        error={errors?.nameOfSurety2}
-      />
-      <InputField
-        label="Surety 2 Members No"
-        name="surety2MembersNo"
-        register={register}
-        error={errors?.surety2MembersNo}
-      />
-      <InputField
-        label="Surety 2 Telephone"
-        name="surety2telePhone"
-        register={register}
-        error={errors?.surety2telePhone}
-      />
-        {/* <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
-          <label
-            className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
-            htmlFor="img"
-          >
-            <Image src="/upload.png" alt="" width={28} height={28} />
-            <span>Upload a photo</span>
-          </label>
-          <input type="file" id="img" {...register("img")} className="hidden" />
-          {errors.img?.message && (
-            <p className="text-xs text-red-400">
-              {errors.img.message.toString()}
-            </p>
-          )}
-        </div> */}
+        <InputField label="First Name" name="firstName" defaultValue={memberData?.firstName} disabled />
+        <InputField label="Surname" name="surname" defaultValue={memberData?.surname} disabled />
+        <InputField label="Email" name="email" defaultValue={memberData?.email} disabled />
       </div>
-      <button className="bg-blue-400 text-white p-2 rounded-md" onClick={onSubmit}>
+
+      {/* Loan Details Section */}
+      <span className="text-xs text-gray-400 font-medium">Loan Details</span>
+      <div className="flex justify-between flex-wrap gap-4">
+        <InputField
+          label="Amount Required"
+          name="amountRequired"
+          register={register}
+          error={errors?.amountRequired}
+        />
+        <InputField
+          label="Purpose of Loan"
+          name="purposeOfLoan"
+          register={register}
+          error={errors?.purposeOfLoan}
+        />
+<InputField
+  label="Duration of Loan (months)"
+  name="durationOfLoan"
+  register={(name: keyof Inputs) => register(name, { valueAsNumber: true })}  // Correctly type 'name' as keyof Inputs
+  error={errors?.durationOfLoan}
+  type="number"
+  inputProps={{ step: "1" }}  // Optionally define step for number input
+/>
+
+
+      </div>
+
+      {/* Surety Information */}
+      <span className="text-xs text-gray-400 font-medium">Surety Information</span>
+      <div className="flex justify-between flex-wrap gap-4">
+        <InputField
+          label="Surety 1 Name"
+          name="nameOfSurety1"
+          register={register}
+          error={errors?.nameOfSurety1}
+        />
+        <InputField
+          label="Surety 1 Member Number"
+          name="surety1MembersNo"
+          register={register}
+          error={errors?.surety1MembersNo}
+        />
+        <InputField
+          label="Surety 1 Phone"
+          name="surety1telePhone"
+          register={register}
+          error={errors?.surety1telePhone}
+        />
+        <InputField
+          label="Surety 2 Name"
+          name="nameOfSurety2"
+          register={register}
+          error={errors?.nameOfSurety2}
+        />
+        <InputField
+          label="Surety 2 Member Number"
+          name="surety2MembersNo"
+          register={register}
+          error={errors?.surety2MembersNo}
+        />
+        <InputField
+          label="Surety 2 Phone"
+          name="surety2telePhone"
+          register={register}
+          error={errors?.surety2telePhone}
+        />
+      </div>
+
+      {/* Dynamic Calculations */}
+      <div>
+        <InputField
+          label="Amount to Be Paid Back"
+          name="amountToBePaidBack"
+          defaultValue={amountToBePaidBack.toFixed(2)}
+          disabled
+        />
+        <InputField
+          label="Expected Reimbursement Date"
+          name="expectedReimbursementDate"
+          defaultValue={expectedReimbursementDate}
+          disabled
+        />
+      </div>
+
+      <button className="bg-blue-400 text-white p-2 rounded-md" type="submit">
         Submit
       </button>
     </form>

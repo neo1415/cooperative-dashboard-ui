@@ -36,6 +36,6 @@ export const fetchUserRole = async (): Promise<UserRole> => {
 
 // Utility function to check if the user's role is allowed to see the menu item
 export const canAccessMenu = (role: string | null, visibleRoles: string[]): boolean => {
-  console.log("Checking access for role:", role, "Visible for:", visibleRoles);  // Add log
+  // console.log("Checking access for role:", role, "Visible for:", visibleRoles);  // Add log
   return role ? visibleRoles.includes(role) : false;
 };
