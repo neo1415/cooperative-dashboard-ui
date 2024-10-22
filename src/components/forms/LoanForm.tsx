@@ -6,31 +6,24 @@ import { z } from "zod";
 import { useEffect, useState } from "react";
 import InputField from "../InputField";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 // Zod schema to validate the form
 const schema = z.object({
   amountRequired: z.string().min(1, { message: "Amount Required is required!" }),
   purposeOfLoan: z.string().min(1, { message: "Purpose of Loan is required!" }),
-  durationOfLoan: z
-    .number()
-    .min(1, { message: "Duration (in months) is required!" })
-    .max(60, { message: "Duration cannot exceed 60 months" }),
-  bvnNumber: z
+  durationOfLoan:  z.string().min(1, { message: "Purpose of Loan is required!" }),
+  bvn: z
     .string()
-    .min(11, { message: "BVN Number must be 11 digits!" })
-    .max(11, { message: "BVN Number must be 11 digits!" }),
+    .length(11, { message: "BVN Number must be exactly 11 digits!" }),
   nameOfSurety1: z.string().min(1, { message: "Surety 1 Name is required!" }),
-  surety1MembersNo: z
-    .string()
-    .min(1, { message: "Surety 1 Members No is required!" }),
+  surety1MembersNo: z.string().min(1, { message: "Surety 1 Members No is required!" }),
   surety1telePhone: z
     .string()
     .min(10, { message: "Surety 1 Phone number must be 10-15 digits!" })
     .max(15, { message: "Surety 1 Phone number must be 10-15 digits!" }),
   nameOfSurety2: z.string().min(1, { message: "Surety 2 Name is required!" }),
-  surety2MembersNo: z
-    .string()
-    .min(1, { message: "Surety 2 Members No is required!" }),
+  surety2MembersNo: z.string().min(1, { message: "Surety 2 Members No is required!" }),
   surety2telePhone: z
     .string()
     .min(10, { message: "Surety 2 Phone number must be 10-15 digits!" })
@@ -40,18 +33,13 @@ const schema = z.object({
 export type Inputs = z.infer<typeof schema>;
 
 const LoanForm = () => {
-  const [memberData, setMemberData] = useState<any>(null); // Store member details
-  const [interestRate] = useState(10); // 10% fixed interest rate
-  const [amountToBePaidBack, setAmountToBePaidBack] = useState(0);
+  const [loanInterest] = useState(10); // 10% fixed interest rate
+  const [amountGranted, setAmountGranted] = useState(0);
   const [expectedReimbursementDate, setExpectedReimbursementDate] = useState("");
   const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-  } =  useForm<Inputs>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<Inputs>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
   });
@@ -59,88 +47,69 @@ const LoanForm = () => {
   const amountRequired = watch("amountRequired");
   const durationOfLoan = watch("durationOfLoan");
 
-  // Fetch member data on component mount
-  useEffect(() => {
-    const fetchMemberData = async () => {
-      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${serverURL}/members`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setMemberData(data); // Set member data
-      } catch (error) {
-        console.error("Error fetching member details:", error);
-      }
-    };
-    fetchMemberData();
-  }, []);
-
   // Calculate amount to be paid back and reimbursement date
   useEffect(() => {
     if (amountRequired && durationOfLoan) {
       const principal = parseFloat(amountRequired);
-      const interest = (principal * interestRate * durationOfLoan) / 12 / 100;
+      const duration = parseFloat(durationOfLoan.toString());  // Ensure it's parsed correctly as a float
+      const interest = (principal * loanInterest * duration) / 12 / 100;
       const total = principal + interest;
 
       // Set calculated values
-      setAmountToBePaidBack(total);
+      setAmountGranted(total);
 
       const now = new Date();
-      const reimbursementDate = new Date(now.setMonth(now.getMonth() + durationOfLoan));
+      const reimbursementDate = new Date(now.setMonth(now.getMonth() + duration));
       setExpectedReimbursementDate(reimbursementDate.toISOString().split("T")[0]); // Format as YYYY-MM-DD
     }
-  }, [amountRequired, durationOfLoan, interestRate]);
+  }, [amountRequired, durationOfLoan, loanInterest]);
 
   // Submit loan request
   const onSubmit = handleSubmit(async (data) => {
-    const cooperativeId = localStorage.getItem("cooperativeId"); // Fetch cooperativeId
-
+    const memberId = localStorage.getItem('userId'); // Get member ID from local storage
+    const cooperativeId = localStorage.getItem('cooperativeId'); // Get cooperative ID from local storage
+    
+    if (!cooperativeId || !memberId) {
+      setSubmitError('Error: Cooperative or Member ID not found. Please log in again.');
+      return;
+    }
+  
     const payload = {
+      memberId,
+      cooperativeId,  // Ensure this value is correctly fetched
       ...data,
-      cooperativeId,
-      firstName: memberData?.firstName,
-      surname: memberData?.surname,
-      email: memberData?.email,
-      bvnNumber: memberData?.bvnNumber || data.bvnNumber, // Fallback to form if missing
-      amountToBePaidBack,
+      amountGranted,
       expectedReimbursementDate,
+      loanInterest,
     };
+    console.log("Submitting cooperativeId in payload:", cooperativeId);
+    console.log("Submitting memberId in payload:", memberId);
+  
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+  
     try {
-      const response = await fetch(`${serverURL}/loan-request`, {
-        method: "POST",
+      const token = localStorage.getItem("firebaseToken"); // Fetch Firebase token
+      const response = await axios.post(`${serverURL}/loan-request`, payload, {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`, // Pass Firebase token to backend
         },
-        body: JSON.stringify(payload),
       });
-
-      if (response.ok) {
-        router.push("/success");
+  
+      if (response.status === 200) {
+        router.push('/success');
       } else {
-        const errorData = await response.json();
-        console.error("Error:", errorData);
+        setSubmitError(response.data.error || 'Failed to submit loan request');
       }
-    } catch (error) {
-      console.error("Error submitting loan request:", error);
+    } catch (error: any) {
+      console.error('Error submitting form:', error);
+      setSubmitError(error.response?.data?.error || error.message || 'Error connecting to the server.');
     }
   });
+  
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">Loan Request</h1>
-
-      {/* Auto-fill KYC Data */}
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField label="First Name" name="firstName" defaultValue={memberData?.firstName} disabled />
-        <InputField label="Surname" name="surname" defaultValue={memberData?.surname} disabled />
-        <InputField label="Email" name="email" defaultValue={memberData?.email} disabled />
-      </div>
 
       {/* Loan Details Section */}
       <span className="text-xs text-gray-400 font-medium">Loan Details</span>
@@ -157,16 +126,13 @@ const LoanForm = () => {
           register={register}
           error={errors?.purposeOfLoan}
         />
-<InputField
-  label="Duration of Loan (months)"
-  name="durationOfLoan"
-  register={(name: keyof Inputs) => register(name, { valueAsNumber: true })}  // Correctly type 'name' as keyof Inputs
-  error={errors?.durationOfLoan}
-  type="number"
-  inputProps={{ step: "1" }}  // Optionally define step for number input
-/>
-
-
+        <InputField
+          label="Duration of Loan (months)"
+          name="durationOfLoan"
+          register={register}
+          error={errors?.durationOfLoan}
+          type="number"  // Make sure it's a number input field
+        />
       </div>
 
       {/* Surety Information */}
@@ -210,12 +176,19 @@ const LoanForm = () => {
         />
       </div>
 
+      <InputField
+        label="BVN Number"
+        name="bvn"
+        register={register}
+        error={errors?.bvn}
+      />
+
       {/* Dynamic Calculations */}
       <div>
         <InputField
           label="Amount to Be Paid Back"
-          name="amountToBePaidBack"
-          defaultValue={amountToBePaidBack.toFixed(2)}
+          name="amountGranted"
+          defaultValue={amountGranted.toFixed(2)}
           disabled
         />
         <InputField

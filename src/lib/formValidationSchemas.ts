@@ -113,6 +113,10 @@ export const memberSchema = z.object({
     .string()
     .min(1, { message: "Telephone 2 is required!" })
     .max(15, { message: "Telephone 2 must be a valid number!" }),
+    bvn: z
+    .string()
+    .min(11, { message: "BVN Number must be 11 digits!" })
+    .max(11, { message: "BVN Number must be 11 digits!" }),
   // email: z.string().email({ message: "Invalid email address!" }),
   dateOfBirth: z.preprocess((arg) => {
     if (typeof arg === 'string' || arg instanceof Date) {

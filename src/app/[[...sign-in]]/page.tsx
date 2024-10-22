@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { signInWithEmailAndPassword, getAuth, getIdTokenResult } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -15,30 +15,68 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Check if user is already logged in and redirect based on role
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      const firebaseToken = localStorage.getItem('firebaseToken');
+      if (firebaseToken) {
+        try {
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (user) {
+            const idTokenResult = await user.getIdTokenResult();
+            const userRole = idTokenResult.claims.role;
+
+            // Redirect based on user role
+            if (userRole === 'cooperative-admin' || userRole === 'admin') {
+              if (idTokenResult.claims.kycIncomplete) {
+                router.push('/cooperativeForm');
+              } else {
+                router.push('/cooperative-admin');
+              }
+            } else if (userRole === 'member') {
+              router.push('/member');
+            } else {
+              throw new Error('Invalid user role');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking user token:', error);
+        }
+      }
+    };
+
+    checkUserStatus();
+  }, [router]); // Run once when component mounts, or when router changes
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
   
     try {
-      // Sign in with Firebase email and password
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
   
-      // Force refresh of token to ensure we get the latest custom claims
-      const idToken = await user.getIdToken(true); // Force token refresh
-  
-      // Store the token in localStorage or sessionStorage to use in API requests
+      const idToken = await user.getIdToken(true);
       localStorage.setItem('firebaseToken', idToken);
-      localStorage.setItem('userId', user.uid); // Store the Firebase UID
-
-      // Get the custom claims
-      const idTokenResult = await user.getIdTokenResult(true);
+      localStorage.setItem('userId', user.uid);
   
-      // Check the user's role
+      const idTokenResult = await user.getIdTokenResult(true);
       const userRole = idTokenResult.claims.role;
+  
+      // Fetch the cooperativeId for the member
+      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+      const response = await fetch(`${serverURL}/get-member-cooperative/${user.uid}`);
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('cooperativeId', data.cooperativeId); // Store cooperativeId
+      } else {
+        throw new Error('Error retrieving cooperativeId');
+      }
+  
+      // Redirect based on user role after login
       if (userRole === 'cooperative-admin' || userRole === 'admin') {
-        // If KYC is incomplete, redirect to KYC form
         if (idTokenResult.claims.kycIncomplete) {
           router.push('/cooperativeForm');
         } else {
@@ -56,7 +94,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-  
   
 
   return (

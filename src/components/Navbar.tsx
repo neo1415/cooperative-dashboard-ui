@@ -14,11 +14,13 @@ const Navbar = () => {
   useEffect(() => {
     // Listen for changes to the authenticated user
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      console.log("Auth state changed. Current user:", currentUser);
       setUser(currentUser);
     });
-
+  
     return () => unsubscribe(); // Cleanup the listener
   }, []);
+  
 
   const handleLogout = async () => {
     try {

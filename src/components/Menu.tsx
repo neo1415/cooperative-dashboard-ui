@@ -33,7 +33,7 @@ const menuItems = [
         icon: "/teacher.png",
         label: "Loans Requested",
         href: "/list/loansRequested",
-        visible: ["admin", "super-admin","auditor","cooperative-admin"],
+        visible: ["admin", "super-admin","auditor","cooperative-admin","member"],
       },
       {
         icon: "/teacher.png",
@@ -147,7 +147,9 @@ const menuItems = [
   },
 ];
 
+import { auth } from '@/app/api/config';
 import { canAccessMenu, fetchUserRole } from '@/lib/roleUtils';
+import { browserSessionPersistence, setPersistence } from 'firebase/auth';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -158,27 +160,48 @@ const Menu = () => {
   const [kycCompleted, setKycCompleted] = useState<boolean>(false);
   const router = useRouter();
 
+  setPersistence(auth, browserSessionPersistence)
+  .then(() => {
+    // Existing and future Auth states will be persisted
+  })
+  .catch((error) => {
+    console.error("Persistence error: ", error);
+  });
   // Fetch user role and KYC status on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       const { role, kycCompleted } = await fetchUserRole();
+      console.log("Fetched user role:", role);
       setRole(role);
       setKycCompleted(kycCompleted);
     };
     fetchUserData();
   }, []);
+  
 
   // Handle menu item click
-  const handleMenuItemClick = (href: string, requiresKycCheck: boolean) => {
-    console.log("KYC check required:", requiresKycCheck);  // Log if KYC check is required
-    console.log("KYC Completed state:", kycCompleted);  // Log the current state of kycCompleted
-
-    if (requiresKycCheck && !kycCompleted) {
-      router.push('/member-form');  // Redirect to /form if KYC is not completed
-    } else {
-      router.push(href);  // Otherwise, go to the normal link
+  const handleMenuItemClick = async (href: string, requiresKycCheck: boolean) => {
+    console.log("Menu item clicked:", href);
+    console.log("Current user before navigating:", auth.currentUser);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        // Force refresh token
+        await currentUser.getIdToken(true);
+        if (requiresKycCheck && !kycCompleted) {
+          router.push('/member-form');
+        } else {
+          router.push(href);
+        }
+      } else {
+        console.log("User is not authenticated, redirecting to login.");
+        router.push('/login');  // Redirect to login if the user is logged out
+      }
+    } catch (error) {
+      console.error("Error refreshing token or navigating:", error);
     }
   };
+  
 
   return (
     <div className="mt-4 text-sm">

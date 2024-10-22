@@ -141,6 +141,12 @@ console.log("Retrieved memberId:", memberId); // Log memberId to check if it's c
          register={register}
         error={errors?.business}
       />
+        <InputField
+    label="BVN Number"
+    name="bvn"
+    register={register}
+    error={errors?.bvn}
+  />
       <InputField
         label="Residential Address"
         name="residentialAddress"
