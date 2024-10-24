@@ -1,314 +1,197 @@
-// //import FormModal from "@/components/FormModal";
-//import FormModal from "@/components/FormModal";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
-import { debtorsData, role} from "@/lib/data";
-import Image from "next/image";
-import Link from "next/link";
+"use client"
 
-type LoansApproved = {
-  id: number;
-  membersNo: string;
-  surname:               string
-  firstName:             string
-  middleName:            string
-  amountRequired: string;
+import React, { useState, useEffect } from "react";
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, CircularProgress
+} from "@mui/material";
+import { CSVLink } from "react-csv";
+import axios from "axios";
+import { getAuth } from "firebase/auth";
+
+// Interface for LoanApprove
+interface LoanApprove {
+  id: string;
+  amountRequired: number;
   purposeOfLoan: string;
-  dateOfApplication: string;
-  durationOfLoan: string;
-  balanceInTheSavingsAccount: string;
-  bvnNumber: string;
+  durationOfLoan: number;
+  bvn: string;
   nameOfSurety1: string;
-  surety1MenbersNo: string;
-  surety1telephone: string
-  surety1balanceInTheSavingsAccount: string
+  surety1MembersNo: string;
+  surety1telePhone: string;
   nameOfSurety2: string;
-  surety2MenbersNo: string;
-  surety2telephone: string
-  surety2balanceInTheSavingsAccount: string
-  amountGuaranteed: string
-  paymentVoucherNO: string
-  amountGranted: string
-  loanInterest: string;
-  repaymentsPrincipal: string;
-  repaymentInterest: string;
-  balanceOutstandingPrincipal: string;
-  balanceOutstandingInterest: string;
-  balanceOutstandingTotal: string;
-  approved: boolean;
-  rejected: boolean
-  pending: boolean
-  cooperative: string
-  // phone: string;
-  // loanDate: string[];
-  // noOfMonths: string[];
-  // address: string;
-  // interest:string,
-  photo: string;
-};
+  surety2MembersNo: string;
+  surety2telePhone: string;
+  amountGranted?: number;
+  loanInterest?: number;
+  dateOfApplication: string;
+  expectedReimbursementDate: string;
+  member: {
+    id: string;
+    firstName: string;
+    surname: string;
+    email: string;
+  };
+  cooperative: {
+    id: string;
+    cooperativeName: string;
+  };
+}
 
-const columns = [
-  {
-    header: "Info",
-    accessor: "info",
-  },
-  {
-    header: "Members Number",
-    accessor: "membersNo",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surname",
-    accessor: "surname",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "First Name",
-    accessor: "firstName",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Middle Name",
-    accessor: "middleName",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Amount Required",
-    accessor: "amountRequired",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Purpose Of Loan",
-    accessor: "purposeOfLoan",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Date Of Application",
-    accessor: "dateOfApplication",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Duration of Loan",
-    accessor: "durationOfLoan",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Balance In the Savings count",
-    accessor: "balanceInTheSavingsAccount",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "BVN Number",
-    accessor: "bvnNumber",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Name Of Surety",
-    accessor: "nameofSurety1",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Members Number",
-    accessor: "surety1MembersNo",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Telephone",
-    accessor: "surety1Telephone",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Balance In the Savings Account",
-    accessor: "surety1balanceInTheavingsAccount",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Name Of Surety",
-    accessor: "nameofSurety2",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Members Number",
-    accessor: "surety2MembersNo",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Telephone",
-    accessor: "surety2Telephone",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Surety Balance In the Savings Account",
-    accessor: "surety2balanceInTheavingsAccount",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Amount Guaranteed",
-    accessor: "amountGuaranteed",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Payment Voucher Number",
-    accessor: "paymentVoucherNumber",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Amount Granted",
-    accessor: "amountGranted",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Loan Interest",
-    accessor: "loanInterest",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Repayment Principal",
-    accessor: "repaymentPrincipal",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Repayments Interest",
-    accessor: "repaymentInterest",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Balance Outstanding Principal",
-    accessor: "balanceOutstandingPrincipal",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Balance Outstanding Interest",
-    accessor: "balanceOutstandingInterest",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Balance Outstanding Total",
-    accessor: "balanceOutstandingTotal",
-    className: "hidden lg:table-cell",
-  },
+const LoanApprovedPage: React.FC = () => {
+  const [loanApproved, setLoanApproved] = useState<LoanApprove[]>([]);
+  const [filteredLoanApproved, setFilteredLoanApproved] = useState<LoanApprove[]>([]);
+  const [search, setSearch] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
+  // Fetch loan requests on component mount
+  useEffect(() => {
+    const fetchLoanApproved = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-  {
-    header: "Approved",
-    accessor: "approved",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Rejected",
-    accessor: "rejected",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Pending",
-    accessor: "pending",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Cooperative",
-    accessor: "cooperative",
-    className: "hidden lg:table-cell",
-  },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
-];
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          const cooperativeId = localStorage.getItem("cooperativeId"); // Optional
+          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 
-const LoanApprovedPage = () => {
-  const renderRow = (item: LoansApproved) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
-    >
-      <td className="flex items-center gap-4 p-4">
-        <Image
-          src={item.photo}
-          alt="item-photo"
-          width={40}
-          height={40}
-          className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
-        />
-        <div className="flex flex-col">
-          <h3 className="font-semibold">{item.membersNo}</h3>
-          <p className="text-xs text-gray-500">{item?.surname}</p>
-          <p className="text-xs text-gray-500">{item?.firstName}</p>
-          <p className="text-xs text-gray-500">{item?.middleName}</p>
-        </div>
-      </td>
-      <td className="hidden md:table-cell">{item.amountRequired}</td>
-      <td className="hidden md:table-cell">{item.purposeOfLoan}</td>
-      <td className="hidden md:table-cell">{item.dateOfApplication}</td>
-      <td className="hidden md:table-cell">{item.durationOfLoan}</td>
-      <td className="hidden md:table-cell">{item.balanceInTheSavingsAccount}</td>
-      <td className="hidden md:table-cell">{item.bvnNumber}</td>
-      <td className="hidden md:table-cell">{item.nameOfSurety1}</td>
-      <td className="hidden md:table-cell">{item.surety1MenbersNo}</td>
-      <td className="hidden md:table-cell">{item.surety1telephone}</td>
-      <td className="hidden md:table-cell">{item.surety1balanceInTheSavingsAccount}</td>
-      <td className="hidden md:table-cell">{item.nameOfSurety2}</td>
-      <td className="hidden md:table-cell">{item.surety2MenbersNo}</td>
-      <td className="hidden md:table-cell">{item.surety2telephone}</td>
-      <td className="hidden md:table-cell">{item.surety2balanceInTheSavingsAccount}</td>
-      <td className="hidden md:table-cell">{item.amountGuaranteed}</td>
-      <td className="hidden md:table-cell">{item.paymentVoucherNO}</td>
-      <td className="hidden md:table-cell">{item.amountGranted}</td>
-      <td className="hidden md:table-cell">{item.loanInterest}</td>
-      <td className="hidden md:table-cell">{item.repaymentInterest}</td>
-      <td className="hidden md:table-cell">{item.repaymentsPrincipal}</td>
-      <td className="hidden md:table-cell">{item.balanceOutstandingPrincipal}</td>
-      <td className="hidden md:table-cell">{item.balanceOutstandingInterest}</td>
-      <td className="hidden md:table-cell">{item.balanceOutstandingTotal}</td>
-      <td className="hidden md:table-cell">{item.approved}</td>
-      <td className="hidden md:table-cell">{item.rejected}</td>
-      <td className="hidden md:table-cell">{item.pending}</td>
-      <td className="hidden md:table-cell">{item.cooperative}</td>
-      <td>
-        <div className="flex items-center gap-2">
-          <Link href={`/list/debtors/${item.id}`}>
-            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky">
-              <Image src="/view.png" alt="" width={16} height={16} />
-            </button>
-          </Link>
-          {/* {role === "admin" && (
-            // <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaPurple">
-            //   <Image src="/delete.png" alt="" width={16} height={16} />
-            // </button>
-            <FormModal table="loan" type="delete" id={item.id}/>
-          )} */}
-        </div>
-      </td>
-    </tr>
-  );
+          const response = await axios.get(`${serverURL}/loan-requests`, {
+            params: { cooperativeId }, // Query cooperativeId if it's available
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-  return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Requested Loans</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {/* {role === "admin" && (
-              // <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              //   <Image src="/plus.png" alt="" width={14} height={14} />
-              // </button>
-              <FormModal table="loan" type="create"/>
-            )} */}
-          </div>
-        </div>
+          if (response.status === 200) {
+            const fetchedLoanApproved = response.data;
+            setLoanApproved(fetchedLoanApproved);
+            setFilteredLoanApproved(fetchedLoanApproved);
+            setIsAuthenticated(true);
+          } else {
+            throw new Error("Failed to fetch loan requests");
+          }
+        } catch (error) {
+          console.error("Error fetching loan requests:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchLoanApproved();
+  }, []);
+
+  // Handle search input and filter loan requests
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase();
+    setSearch(value);
+    const filtered = loanApproved.filter((loanApprove) =>
+      Object.values(loanApprove)
+        .concat(Object.values(loanApprove.member))
+        .some((val) => val?.toString().toLowerCase().includes(value))
+    );
+    setFilteredLoanApproved(filtered);
+  };
+
+  const headers = [
+    { label: "Loan ID", key: "id" },
+    { label: "Cooperative Name", key: "cooperativeName" },
+    { label: "Email", key: "member.email" },
+    { label: "First Name", key: "member.firstName" },
+    { label: "Surname", key: "member.surname" },
+    { label: "Amount Requested", key: "amountRequired" },
+    { label: "Purpose of Loan", key: "purposeOfLoan" },
+    { label: "Duration (Months)", key: "durationOfLoan" },
+    { label: "BVN", key: "bvn" },
+    { label: "Surety 1 Name", key: "nameOfSurety1" },
+    { label: "Surety 1 Member Number", key: "surety1MembersNo" },
+    { label: "Surety 1 Phone", key: "surety1telePhone" },
+    { label: "Surety 2 Name", key: "nameOfSurety2" },
+    { label: "Surety 2 Member Number", key: "surety2MembersNo" },
+    { label: "Surety 2 Phone", key: "surety2telePhone" },
+    { label: "Amount Granted", key: "amountGranted" },
+    { label: "Loan Interest", key: "loanInterest" },
+    { label: "Date of Application", key: "dateOfApplication" },
+    { label: "Expected Reimbursement Date", key: "expectedReimbursementDate" },
+    { label: "Status", key: "pending" }, // Approved, Rejected, or Pending
+  ];
+
+  // Show loading spinner while fetching data
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
       </div>
-      {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={debtorsData} />
-      {/* PAGINATION */}
-      <Pagination />
+    );
+  }
+
+  // If no user is authenticated
+  if (!isAuthenticated) {
+    return <div>No user authenticated. Please log in.</div>;
+  }
+
+  // Render the loan requests table
+  return (
+    <div>
+      <TextField
+        label="Search"
+        variant="outlined"
+        value={search}
+        onChange={handleSearch}
+        style={{ marginBottom: "20px" }}
+      />
+      <CSVLink data={filteredLoanApproved} headers={headers} filename="loan-requests.csv">
+        <Button variant="contained" color="primary" style={{ marginBottom: "20px" }}>
+          Export CSV
+        </Button>
+      </CSVLink>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {headers.map((column) => (
+                <TableCell key={column.key}>{column.label}</TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredLoanApproved.length > 0 ? (
+              filteredLoanApproved.map((loanApprove) => (
+                <TableRow key={loanApprove.id}>
+                  <TableCell>{loanApprove.id}</TableCell>
+                  <TableCell>{loanApprove.cooperative.cooperativeName}</TableCell>
+                  <TableCell>{loanApprove.member.email}</TableCell>
+                  <TableCell>{loanApprove.member.firstName}</TableCell>
+                  <TableCell>{loanApprove.member.surname}</TableCell>
+                  <TableCell>{loanApprove.amountRequired}</TableCell>
+                  <TableCell>{loanApprove.purposeOfLoan}</TableCell>
+                  <TableCell>{loanApprove.durationOfLoan}</TableCell>
+                  <TableCell>{loanApprove.bvn}</TableCell>
+                  <TableCell>{loanApprove.nameOfSurety1}</TableCell>
+                  <TableCell>{loanApprove.surety1MembersNo}</TableCell>
+                  <TableCell>{loanApprove.surety1telePhone}</TableCell>
+                  <TableCell>{loanApprove.nameOfSurety2}</TableCell>
+                  <TableCell>{loanApprove.surety2MembersNo}</TableCell>
+                  <TableCell>{loanApprove.surety2telePhone}</TableCell>
+                  <TableCell>{loanApprove.amountGranted}</TableCell>
+                  <TableCell>{loanApprove.loanInterest}</TableCell>
+                  <TableCell>{loanApprove.dateOfApplication}</TableCell>
+                  <TableCell>{loanApprove.expectedReimbursementDate}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={headers.length} align="center">
+                  No loan requests found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </div>
   );
 };

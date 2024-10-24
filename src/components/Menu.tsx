@@ -158,6 +158,7 @@ import React, { useEffect, useState } from 'react'
 const Menu = () => {
   const [role, setRole] = useState<string | null>(null);
   const [kycCompleted, setKycCompleted] = useState<boolean>(false);
+  
   const router = useRouter();
 
   setPersistence(auth, browserSessionPersistence)

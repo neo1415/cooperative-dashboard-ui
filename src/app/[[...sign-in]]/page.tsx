@@ -65,14 +65,22 @@ const LoginPage = () => {
       const idTokenResult = await user.getIdTokenResult(true);
       const userRole = idTokenResult.claims.role;
   
-      // Fetch the cooperativeId for the member
-      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-      const response = await fetch(`${serverURL}/get-member-cooperative/${user.uid}`);
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('cooperativeId', data.cooperativeId); // Store cooperativeId
-      } else {
-        throw new Error('Error retrieving cooperativeId');
+      // For members, fetch cooperativeId using the API
+      if (userRole === 'member') {
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        const response = await fetch(`${serverURL}/get-member-cooperative/${user.uid}`);
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('cooperativeId', data.cooperativeId); // Store cooperativeId for members
+        } else {
+          throw new Error('Error retrieving cooperativeId');
+        }
+      } else if (userRole === 'cooperative-admin') {
+        // For cooperative-admins, cooperativeId is already stored during registration
+        const storedCooperativeId = localStorage.getItem('cooperativeId');
+        if (!storedCooperativeId) {
+          throw new Error('Cooperative ID not found for admin.');
+        }
       }
   
       // Redirect based on user role after login
@@ -95,6 +103,7 @@ const LoginPage = () => {
     }
   };
   
+    
 
   return (
     <div className="h-screen flex items-center justify-center bg-lamaSkyLight">
