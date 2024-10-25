@@ -148,6 +148,7 @@ const menuItems = [
 ];
 
 import { auth } from '@/app/api/config';
+import { useAuth } from '@/context/AuthProvider';
 import { canAccessMenu, fetchUserRole } from '@/lib/roleUtils';
 import { browserSessionPersistence, setPersistence } from 'firebase/auth';
 import Image from 'next/image';
@@ -156,29 +157,8 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 
 const Menu = () => {
-  const [role, setRole] = useState<string | null>(null);
-  const [kycCompleted, setKycCompleted] = useState<boolean>(false);
-  
+  const { role, kycCompleted } = useAuth(); // Use the AuthContext to get role and KYC status
   const router = useRouter();
-
-  setPersistence(auth, browserSessionPersistence)
-  .then(() => {
-    // Existing and future Auth states will be persisted
-  })
-  .catch((error) => {
-    console.error("Persistence error: ", error);
-  });
-  // Fetch user role and KYC status on component mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const { role, kycCompleted } = await fetchUserRole();
-      console.log("Fetched user role:", role);
-      setRole(role);
-      setKycCompleted(kycCompleted);
-    };
-    fetchUserData();
-  }, []);
-  
 
   // Handle menu item click
   const handleMenuItemClick = async (href: string, requiresKycCheck: boolean) => {
@@ -190,19 +170,18 @@ const Menu = () => {
         // Force refresh token
         await currentUser.getIdToken(true);
         if (requiresKycCheck && !kycCompleted) {
-          router.push('/member-form');
+          router.push("/member-form");
         } else {
           router.push(href);
         }
       } else {
         console.log("User is not authenticated, redirecting to login.");
-        router.push('/login');  // Redirect to login if the user is logged out
+        router.push("/login"); // Redirect to login if the user is logged out
       }
     } catch (error) {
       console.error("Error refreshing token or navigating:", error);
     }
   };
-  
 
   return (
     <div className="mt-4 text-sm">

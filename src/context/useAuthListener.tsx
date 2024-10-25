@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+// import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/app/api/config";
+import { onAuthStateChanged } from "firebase/auth";
 
 const useAuthListener = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -11,24 +12,8 @@ const useAuthListener = () => {
   const [kycCompleted, setKycCompleted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true); // To handle loading state during auth check
   const router = useRouter();
+  // const auth = getAuth();
 
-
-  useEffect(() => {
-    const refreshInterval = setInterval(async () => {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const idToken = await user.getIdToken(true); // Force refresh token
-          localStorage.setItem('firebaseToken', idToken);
-        } catch (error) {
-          console.error('Error refreshing token:', error);
-        }
-      }
-    }, 30 * 60 * 1000); // Refresh every 30 minutes
-  
-    return () => clearInterval(refreshInterval); // Clear interval on unmount
-  }, []);
-  
   useEffect(() => {
     // Check if cached values exist in localStorage
     const cachedToken = localStorage.getItem("firebaseToken");
