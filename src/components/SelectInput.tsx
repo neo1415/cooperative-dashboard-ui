@@ -1,9 +1,9 @@
-import { FieldError } from "react-hook-form";
+import { FieldError, UseFormRegister } from "react-hook-form";
 
 type SelectFieldProps = {
   label: string;
   name: string;
-  register: any;
+  register: UseFormRegister<any>;
   options: { value: string; label: string }[];
   defaultValue?: string;
   error?: FieldError;
@@ -34,9 +34,7 @@ const SelectField = ({
           </option>
         ))}
       </select>
-      {error?.message && (
-        <p className="text-xs text-red-400">{error.message.toString()}</p>
-      )}
+      {error?.message && <p className="text-xs text-red-400">{error.message}</p>}
     </div>
   );
 };

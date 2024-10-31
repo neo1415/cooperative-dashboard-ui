@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { signInWithEmailAndPassword, getAuth, getIdTokenResult } from 'firebase/auth';
+import { signInWithEmailAndPassword, getIdTokenResult } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 import Image from 'next/image';
@@ -21,13 +21,11 @@ const LoginPage = () => {
       const firebaseToken = localStorage.getItem('firebaseToken');
       if (firebaseToken) {
         try {
-          const auth = getAuth();
           const user = auth.currentUser;
           if (user) {
             const idTokenResult = await user.getIdTokenResult();
             const userRole = idTokenResult.claims.role;
 
-            // Redirect based on user role
             if (userRole === 'cooperative-admin' || userRole === 'admin') {
               if (idTokenResult.claims.kycIncomplete) {
                 router.push('/cooperativeForm');
@@ -36,8 +34,6 @@ const LoginPage = () => {
               }
             } else if (userRole === 'member') {
               router.push('/member');
-            } else {
-              throw new Error('Invalid user role');
             }
           }
         } catch (error) {
@@ -47,7 +43,7 @@ const LoginPage = () => {
     };
 
     checkUserStatus();
-  }, [router]); // Run once when component mounts, or when router changes
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,39 +53,19 @@ const LoginPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-  
       const idToken = await user.getIdToken(true);
       localStorage.setItem('firebaseToken', idToken);
-      localStorage.setItem('userId', user.uid);
   
-      const idTokenResult = await user.getIdTokenResult(true);
+      // Set cooperativeId to the user's Firebase UID
+      const cooperativeId = user.uid;
+      localStorage.setItem('cooperativeId', cooperativeId);
+  
+      const idTokenResult = await user.getIdTokenResult();
       const userRole = idTokenResult.claims.role;
   
-      // For members, fetch cooperativeId using the API
-      if (userRole === 'member') {
-        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-        const response = await fetch(`${serverURL}/get-member-cooperative/${user.uid}`);
-        const data = await response.json();
-        if (response.ok) {
-          localStorage.setItem('cooperativeId', data.cooperativeId); // Store cooperativeId for members
-        } else {
-          throw new Error('Error retrieving cooperativeId');
-        }
-      } else if (userRole === 'cooperative-admin') {
-        // For cooperative-admins, cooperativeId is already stored during registration
-        const storedCooperativeId = localStorage.getItem('cooperativeId');
-        if (!storedCooperativeId) {
-          throw new Error('Cooperative ID not found for admin.');
-        }
-      }
-  
-      // Redirect based on user role after login
+      // Route user to appropriate page based on role
       if (userRole === 'cooperative-admin' || userRole === 'admin') {
-        if (idTokenResult.claims.kycIncomplete) {
-          router.push('/cooperativeForm');
-        } else {
-          router.push('/cooperative-admin');
-        }
+        router.push(idTokenResult.claims.kycIncomplete ? '/cooperativeForm' : '/cooperative-admin');
       } else if (userRole === 'member') {
         router.push('/member');
       } else {
@@ -103,8 +79,7 @@ const LoginPage = () => {
     }
   };
   
-    
-
+  
   return (
     <div className="h-screen flex items-center justify-center bg-lamaSkyLight">
       <div className="bg-white p-12 rounded-md shadow-2xl flex flex-col gap-2">

@@ -7,35 +7,8 @@ import {
 import { CSVLink } from "react-csv";
 import axios from "axios";
 import { getAuth } from "firebase/auth";
+import { LoanApprove } from "@/types/types";
 
-// Interface for LoanApprove
-interface LoanApprove {
-  id: string;
-  amountRequired: number;
-  purposeOfLoan: string;
-  durationOfLoan: number;
-  bvn: string;
-  nameOfSurety1: string;
-  surety1MembersNo: string;
-  surety1telePhone: string;
-  nameOfSurety2: string;
-  surety2MembersNo: string;
-  surety2telePhone: string;
-  amountGranted?: number;
-  loanInterest?: number;
-  dateOfApplication: string;
-  expectedReimbursementDate: string;
-  member: {
-    id: string;
-    firstName: string;
-    surname: string;
-    email: string;
-  };
-  cooperative: {
-    id: string;
-    cooperativeName: string;
-  };
-}
 
 const LoanApprovedPage: React.FC = () => {
   const [loanApproved, setLoanApproved] = useState<LoanApprove[]>([]);
@@ -136,6 +109,7 @@ const LoanApprovedPage: React.FC = () => {
   // Render the loan requests table
   return (
     <div>
+       <h1 className="text-xl font-semibold">Approved Loans</h1>
       <TextField
         label="Search"
         variant="outlined"

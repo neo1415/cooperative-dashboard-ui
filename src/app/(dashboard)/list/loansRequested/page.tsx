@@ -7,9 +7,9 @@ import {
 import { CSVLink } from "react-csv";
 import axios from "axios";
 import { auth } from "@/app/api/config";
+import { useRouter } from "next/navigation";
+import LoanRequestDetailPage from "./[id]/page";
 
-
-// Interface for LoanRequest
 interface LoanRequest {
   id: string;
   amountRequired: number;
@@ -34,6 +34,10 @@ interface LoanRequest {
     firstName: string;
     surname: string;
     email: string;
+    memberSavings:{
+      savingsBalance: number,
+      savingsDeposits: number
+    }
   };
   cooperative: {
     id: string;
@@ -43,6 +47,7 @@ interface LoanRequest {
 
 const LoanRequestsPage: React.FC = () => {
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
+  const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
   const [filteredLoanRequests, setFilteredLoanRequests] = useState<LoanRequest[]>([]);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,7 +57,15 @@ const LoanRequestsPage: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<LoanRequest | null>(null);
   const [status, setStatus] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
+  const router = useRouter()
 
+  const handleOpenModal = (loanId: string) => {
+    setSelectedLoanId(loanId);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedLoanId(null);
+  };
   // Fetch loan requests on component mount
   useEffect(() => {
     const fetchLoanRequests = async () => {
@@ -188,6 +201,7 @@ const LoanRequestsPage: React.FC = () => {
 
   return (
     <div>
+     <h1 className="text-xl font-semibold">Approved Loans</h1>
       <TextField
         label="Search"
         variant="outlined"
@@ -248,11 +262,17 @@ const LoanRequestsPage: React.FC = () => {
                           ? "Rejected"
                           : "Pending"}
                       </Button>
+
+
                     ) : (
                       <span>{loanRequest.pending ? "Pending" : loanRequest.approved ? "Approved" : "Rejected"}</span>
                     )}
-                  </TableCell>
-                </TableRow>
+  <Button variant="contained" color="primary" onClick={() => handleOpenModal(loanRequest.id)}>
+              View More
+            </Button>
+          </TableCell>
+        </TableRow>
+
               ))
             ) : (
               <TableRow>
@@ -276,6 +296,11 @@ const LoanRequestsPage: React.FC = () => {
         <MenuItem onClick={() => handleStatusSelect("rejected")}>Rejected</MenuItem>
       </Menu>
 
+      <Dialog open={!!selectedLoanId} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+        <DialogContent>
+          {selectedLoanId && <LoanRequestDetailPage loanId={selectedLoanId} onClose={handleCloseModal} />}
+        </DialogContent>
+      </Dialog>
       {/* Confirmation Modal */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Confirm Status Change</DialogTitle>

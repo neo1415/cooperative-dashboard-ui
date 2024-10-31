@@ -1,5 +1,7 @@
 "use client"
 
+import Announcements from "@/components/Announcements";
+import BigCalendar from "@/components/BigCalender";
 import Performance from "@/components/Performance";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,8 +11,6 @@ import axios from 'axios';
 import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
 import TransactionsTable from "../list/member-transactions/page";
-import BigCalendar from "@/components/BigCalender";
-import EventCalendar from "@/components/EventCalender";
 
 interface Member {
   id: string;
@@ -18,26 +18,8 @@ interface Member {
   firstName: string;
   email: string;
   memberDetails?: MemberDetails; // Optional memberDetails array
-  loansAppproved?:LoansApproved;
 }
 
-interface LoansApproved {
-  id: string;
-  amountRequired: number;
-  purposeOfLoan: string;
-  durationOfLoan: number;
-  bvn: string;
-  nameOfSurety1: string;
-  surety1MembersNo: string;
-  surety1telePhone: string;
-  nameOfSurety2: string;
-  surety2MembersNo: string;
-  surety2telePhone: string;
-  amountGranted?: number;
-  loanInterest?: number;
-  dateOfApplication: string;
-  expectedReimbursementDate: string;
-}
 // MemberDetails interface
 interface MemberDetails {
   middleName?: string;
@@ -69,7 +51,7 @@ declare global {
   }
 }
 
-const MemberProfilePage = () => {
+const MemberSavingsPage = () => {
 
   const [memberData, setMemberData] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +93,7 @@ const MemberProfilePage = () => {
         if (user) {
           const token = await user.getIdToken();
           const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-          const response = await axios.get<Member>(`${serverURL}/member/profileSettings`, {
+          const response = await axios.get<Member>(`${serverURL}/member/profile`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setMemberData(response.data);
@@ -128,6 +110,46 @@ const MemberProfilePage = () => {
     fetchMemberData();
   }, []);
 
+    const config = {
+    public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+    tx_ref: Date.now().toString(),
+    amount: depositAmount,
+    currency: "NGN",
+    payment_options: "card,mobilemoney,ussd",
+    customer: {
+      email: memberData?.email || "default-email@example.com",
+      phone_number: memberData?.memberDetails?.telephone1 || "0000000000",
+      name: `${memberData?.firstName || ""} ${memberData?.surname || ""}`,
+    },
+    customizations: {
+      title: "Savings Payment",
+      description: "Deposit for cooperative Savings",
+      logo: "https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-online-shop-log.jpg",
+    },
+  };
+
+  const fwConfig = {
+    ...config,
+    text: "Make a contribution today!",
+    callback: async (response: any) => {
+      console.log(response);
+
+      if (response.status === "successful") {
+        // Log the payment amount to the backend for savings deposit
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings`,
+          {
+            amount: depositAmount, // Adjusted to `amount` as expected by the backend
+            transactionId: response.transaction_id,
+          },
+          { headers: { Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` } }
+        );
+      }
+
+      closePaymentModal();
+    },
+    onClose: () => {},
+  };
 
   if (loading) return <CircularProgress />;
   if (error) return <p>{error}</p>;
@@ -154,7 +176,6 @@ const MemberProfilePage = () => {
               <h1 className="text-xl font-semibold">{memberData?.surname} {memberData?.firstName}</h1>
               <p className="text-sm text-gray-500">
               {memberData?.memberDetails?.residentialAddress}
-
               </p>
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
@@ -163,7 +184,7 @@ const MemberProfilePage = () => {
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/date.png" alt="" width={14} height={14} />
-                  {memberData?.loansAppproved?.purposeOfLoan}
+                  <span>January 2025</span>
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/mail.png" alt="" width={14} height={14} />
@@ -258,9 +279,17 @@ const MemberProfilePage = () => {
            
           <div className="flex flex-col gap-4 bg-white p-8 rounded-lg max-w-md mx-auto mt-4">
           <Typography variant="h6" className="font-semibold">
-            Calendar Reminder
+            Enter Amount to Deposit
           </Typography>
-          <EventCalendar />
+          <TextField
+            label="depositAmount (NGN)"
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(Number(e.target.value))}
+            type="number"
+            fullWidth
+            variant="outlined"
+          />
+     <FlutterWaveButton {...fwConfig} />
         </div>
           </div>
         </div>
@@ -286,4 +315,4 @@ const MemberProfilePage = () => {
   );
 };
 
-export default MemberProfilePage;
+export default MemberSavingsPage;

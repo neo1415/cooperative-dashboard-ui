@@ -4,42 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import axios from 'axios';
+import { Cooperative } from '@/types/types';
 
-// Define the CooperativeDetails interface
-interface CooperativeDetails {
-  registrationNumber: string;
-  dateOfIncorporation: string;
-  address: string;
-  email: string;
-  phoneNumber: string;
-  totalSavings: number;
-  totalDebt: number;
-  totalLoansRequested: number;
-  totalLoansApproved: number;
-  totalProfit: number;
-  directorName: string;
-  directorPosition: string;
-  directorEmail: string;
-  directorPhoneNumber: string;
-  directorDateOfBirth: string;
-  directorPlaceOfBirth: string;
-  directorNationality: string;
-  directorOccupation: string;
-  directorBVNNumber: string;
-  directorIDType: string;
-  directorIDNumber: string;
-  directorIssuedDate: string;
-  directorExpiryDate: string;
-  directorSourceOfIncome: string;
-}
-
-// Define the Cooperative interface that includes an array of CooperativeDetails
-interface Cooperative {
-  id: string;
-  cooperativeName: string;
-  createdAt: string;
-  cooperativeDetails: CooperativeDetails[]; // CooperativeDetails is an array
-}
 
 const CooperativeListPage: React.FC = () => {
   const [cooperatives, setCooperatives] = useState<Cooperative[]>([]);
