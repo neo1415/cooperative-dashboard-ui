@@ -18,27 +18,22 @@ const LoginPage = () => {
   // Check if user is already logged in and redirect based on role
   useEffect(() => {
     const checkUserStatus = async () => {
-      const firebaseToken = localStorage.getItem('firebaseToken');
-      if (firebaseToken) {
-        try {
-          const user = auth.currentUser;
-          if (user) {
-            const idTokenResult = await user.getIdTokenResult();
-            const userRole = idTokenResult.claims.role;
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const idTokenResult = await user.getIdTokenResult();
+          const userRole = idTokenResult.claims.role;
+          const kycIncomplete = idTokenResult.claims.kycIncomplete;
 
-            if (userRole === 'cooperative-admin' || userRole === 'admin') {
-              if (idTokenResult.claims.kycIncomplete) {
-                router.push('/cooperativeForm');
-              } else {
-                router.push('/cooperative-admin');
-              }
-            } else if (userRole === 'member') {
-              router.push('/member');
-            }
+          // Redirect based on user role and KYC status
+          if (userRole === 'cooperative-admin' || userRole === 'admin') {
+            router.push(kycIncomplete ? '/cooperativeForm' : '/cooperative-admin');
+          } else if (userRole === 'member') {
+            router.push('/member');
           }
-        } catch (error) {
-          console.error('Error checking user token:', error);
         }
+      } catch (error) {
+        console.error('Error checking user token:', error);
       }
     };
 
@@ -49,23 +44,18 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-  
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      const idToken = await user.getIdToken(true);
-      localStorage.setItem('firebaseToken', idToken);
-  
-      // Set cooperativeId to the user's Firebase UID
-      const cooperativeId = user.uid;
-      localStorage.setItem('cooperativeId', cooperativeId);
-  
+
+      // Fetch claims and route accordingly
       const idTokenResult = await user.getIdTokenResult();
       const userRole = idTokenResult.claims.role;
-  
-      // Route user to appropriate page based on role
+      const kycIncomplete = idTokenResult.claims.kycIncomplete;
+
       if (userRole === 'cooperative-admin' || userRole === 'admin') {
-        router.push(idTokenResult.claims.kycIncomplete ? '/cooperativeForm' : '/cooperative-admin');
+        router.push(kycIncomplete ? '/cooperativeForm' : '/cooperative-admin');
       } else if (userRole === 'member') {
         router.push('/member');
       } else {
@@ -78,6 +68,7 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
+
   
   
   return (

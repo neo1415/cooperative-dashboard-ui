@@ -9,6 +9,7 @@ import axios from "axios";
 import { auth } from "@/app/api/config";
 import { useRouter } from "next/navigation";
 import LoanRequestDetailPage from "./[id]/page";
+import { useAuth } from "@/context/AuthCOntext";
 
 interface LoanRequest {
   id: string;
@@ -51,13 +52,14 @@ const LoanRequestsPage: React.FC = () => {
   const [filteredLoanRequests, setFilteredLoanRequests] = useState<LoanRequest[]>([]);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false); // Check if user is admin
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedLoan, setSelectedLoan] = useState<LoanRequest | null>(null);
   const [status, setStatus] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
   const router = useRouter()
+
 
   const handleOpenModal = (loanId: string) => {
     setSelectedLoanId(loanId);
@@ -66,49 +68,52 @@ const LoanRequestsPage: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedLoanId(null);
   };
-  // Fetch loan requests on component mount
+
+
+
+  const { role, cooperativeId, memberId } = useAuth();
+  const isAuthenticated = role !== null;
+
+  useEffect(() => {
+    console.log("Role:", role, "Cooperative ID:", cooperativeId, "Member ID:", memberId);
+  }, [role, cooperativeId, memberId]);
+
   useEffect(() => {
     const fetchLoanRequests = async () => {
-      const user = auth.currentUser;
-
-      if (user) {
-        try {
-          const token = await user.getIdToken();
-          const cooperativeId = localStorage.getItem("cooperativeId"); // Optional
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
-
-          const response = await axios.get(`${serverURL}/loan-requests`, {
-            params: { cooperativeId }, // Query cooperativeId if it's available
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (response.status === 200) {
-            const fetchedLoanRequests = response.data;
-            setLoanRequests(fetchedLoanRequests);
-            setFilteredLoanRequests(fetchedLoanRequests);
-
-            // Check if user is admin from claims (Firebase)
-            const idTokenResult = await user.getIdTokenResult();
-            setIsAdmin(idTokenResult.claims.role === 'cooperative-admin');
-            setIsAuthenticated(true);
-          } else {
-            throw new Error("Failed to fetch loan requests");
-          }
-        } catch (error) {
-          console.error("Error fetching loan requests:", error);
-        } finally {
-          setLoading(false);
+      if (!auth.currentUser || !role || (role === 'cooperative-admin' && !cooperativeId) || (role === 'member' && !memberId)) {
+        setLoading(false);
+        return;
+      }
+  
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+  
+        const response = await axios.get(`${serverURL}/loan-requests`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (response.status === 200) {
+          setLoanRequests(response.data);
+          setFilteredLoanRequests(response.data);
+        } else {
+          throw new Error("Failed to fetch loan requests");
         }
-      } else {
+      } catch (error) {
+        console.error("Error fetching loan requests:", error);
+      } finally {
         setLoading(false);
       }
     };
+  
+    if (role && (role === 'cooperative-admin' ? cooperativeId : memberId)) {
+      fetchLoanRequests();
+    }
+  }, [role, cooperativeId, memberId]);
 
-    fetchLoanRequests();
-  }, []);
-
+  
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
     setSearch(value);
@@ -165,7 +170,7 @@ const LoanRequestsPage: React.FC = () => {
   };
 
   const headers = [
-    { label: "Loan ID", key: "id" },
+    // { label: "Loan ID", key: "id" },
     { label: "Cooperative Name", key: "cooperativeName" },
     { label: "Email", key: "member.email" },
     { label: "First Name", key: "member.firstName" },
@@ -201,7 +206,7 @@ const LoanRequestsPage: React.FC = () => {
 
   return (
     <div>
-     <h1 className="text-xl font-semibold">Approved Loans</h1>
+     <h1 className="text-xl font-semibold">Requested Loans</h1>
       <TextField
         label="Search"
         variant="outlined"
@@ -227,7 +232,7 @@ const LoanRequestsPage: React.FC = () => {
             {filteredLoanRequests.length > 0 ? (
               filteredLoanRequests.map((loanRequest) => (
                 <TableRow key={loanRequest.id}>
-                  <TableCell>{loanRequest.id}</TableCell>
+                  {/* <TableCell>{loanRequest.id}</TableCell> */}
                   <TableCell>{loanRequest.cooperative.cooperativeName}</TableCell>
                   <TableCell>{loanRequest.member.email}</TableCell>
                   <TableCell>{loanRequest.member.firstName}</TableCell>
@@ -268,7 +273,7 @@ const LoanRequestsPage: React.FC = () => {
                       <span>{loanRequest.pending ? "Pending" : loanRequest.approved ? "Approved" : "Rejected"}</span>
                     )}
   <Button variant="contained" color="primary" onClick={() => handleOpenModal(loanRequest.id)}>
-              View More
+              Review
             </Button>
           </TableCell>
         </TableRow>

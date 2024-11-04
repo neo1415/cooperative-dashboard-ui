@@ -48,14 +48,12 @@ const Menu = () => {
 
   const handleMenuItemClick = (href: string, requiresKycCheck: boolean) => {
     if (href === "/logout") {
-      localStorage.clear();
-      router.push("/login");  // Clear all data and redirect to login
+      // auth.signOut().then(() => router.push("/login"));  // Clear session and redirect to login
       return;
     }
 
     if (requiresKycCheck && !kycCompleted) {
-      router.push("/member-form")
-      // router.push(href.startsWith("/") ? href : `/${href}`);
+      router.push("/member-form");
     } else {
       router.push(href.startsWith("/") ? href : `/${href}`);
     }
@@ -74,9 +72,7 @@ const Menu = () => {
               return (
                 <div
                   key={item.label}
-                  onClick={() => handleMenuItemClick(item.href
-                    , requiresKycCheck
-                  )}
+                  onClick={() => handleMenuItemClick(item.href, requiresKycCheck)}
                   className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-2 rounded-md hover:bg-neoSkyLight cursor-pointer"
                 >
                   <Image src={item.icon} alt="item icon" width={20} height={20} />

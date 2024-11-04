@@ -77,31 +77,32 @@ const MemberProfilePage = () => {
   const [depositAmount, setDepositAmount] = useState<number>(100); // Default deposit depositAmount
   const [transaction, setTransaction] = useState<Transaction | null>(null);
 // 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (user) {
-          const token = await user.getIdToken();
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-          const response = await axios.get<Transaction>(`${serverURL}/single-transaction`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setTransaction(response.data);
-        } else {
-          setError('User not authenticated');
-        }
-      } catch (error) {
-        setError('Failed to fetch transaction');
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchTransaction = async () => {
+    try {
+      setLoading(true);
+      const user = auth.currentUser;
 
-    fetchTransaction();
-  }, []);
+      if (user) {
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        const response = await axios.get<Transaction>(`${serverURL}/single-transaction`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTransaction(response.data);
+      } else {
+        setError('User not authenticated');
+      }
+    } catch (error) {
+      setError('Failed to fetch transaction');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTransaction();
+}, []);
 
   useEffect(() => {
     const fetchMemberData = async () => {

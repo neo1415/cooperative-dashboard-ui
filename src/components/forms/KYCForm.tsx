@@ -9,6 +9,7 @@ import { submitMemberForm } from "@/lib/actions";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useAuth } from "@/context/AuthCOntext";
 
 
 const KYCForm = () => {
@@ -22,9 +23,10 @@ const KYCForm = () => {
 
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
+  const { role, memberId } = useAuth();
   const onSubmit = handleSubmit(async (data) => {
-    const memberId = localStorage.getItem('userId');
+   
+    // const memberId = localStorage.getItem('userId');
 console.log("Retrieved memberId:", memberId); // Log memberId to check if it's correctly retrieved
 
     if (!memberId) {

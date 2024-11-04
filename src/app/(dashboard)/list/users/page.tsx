@@ -6,6 +6,7 @@ import { CSVLink } from 'react-csv';
 import axios from 'axios';
 import { auth } from '@/app/api/config'; // Ensure auth config is correct
 import { browserSessionPersistence, setPersistence } from 'firebase/auth';
+import { useAuth } from '@/context/AuthCOntext';
 
 // Member interface
 interface Member {
@@ -45,6 +46,7 @@ const MembersListPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true); // Add loading state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); // To track if user is authenticated
 
+  const { role } = useAuth();
   setPersistence(auth, browserSessionPersistence)
   .then(() => {
     // Existing and future Auth states will be persisted
@@ -54,49 +56,49 @@ const MembersListPage: React.FC = () => {
   });
   // Fetch members on component mount
   useEffect(() => {
+    
     const fetchMembers = async () => {
+   
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-      
-      // Listen to Firebase auth state
-      const unsubscribe = auth.onAuthStateChanged(async (user) => {
-        if (user) {
-          try {
-            const token = await user.getIdToken();  // Get Firebase ID token from the current user
   
-            const response = await axios.get(`${serverURL}/members`, {
-              headers: {
-                Authorization: `Bearer ${token}`,  // Send token in Authorization header
-                'Content-Type': 'application/json',
-              },
-            });
+      if (role === 'cooperative-admin') {
+        // Set persistence, if required
+        setPersistence(auth, browserSessionPersistence).catch((error) => {
+          console.error("Persistence error: ", error);
+        });
   
-            if (response.status === 200) {
-              const fetchedMembers = response.data;
-              console.log('Members:', fetchedMembers);  // Log members for debugging
+        // Listen to Firebase auth state
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            try {
+              const token = await user.getIdToken();
+              const response = await axios.get(`${serverURL}/members`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
   
-              // Set the members state
-              setMembers(fetchedMembers);
-              setFilteredMembers(fetchedMembers); // Initialize the filtered list with all members
-              setIsAuthenticated(true); // Set the user as authenticated
-            } else {
-              throw new Error('Failed to fetch members');
+              if (response.status === 200) {
+                const fetchedMembers = response.data;
+                setMembers(fetchedMembers);
+                setFilteredMembers(fetchedMembers);
+                setIsAuthenticated(true);
+              } else {
+                throw new Error('Failed to fetch members');
+              }
+            } catch (error) {
+              console.error('Error fetching members:', error);
+            } finally {
+              setLoading(false);
             }
-          } catch (error) {
-            console.error('Error fetching members:', error);
-          } finally {
-            setLoading(false); // Set loading to false whether success or error
           }
-        } else {
-          console.log('No user logged in');
-          setLoading(false); // Stop loading if no user is logged in
-        }
-      });
-  
-      return () => unsubscribe(); // Cleanup the listener on unmount
+        });
+      }
     };
   
     fetchMembers();
-  }, []);
+  }, [role]);
   
   // Handle search input and filter members based on input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

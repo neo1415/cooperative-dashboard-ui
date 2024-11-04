@@ -79,33 +79,12 @@ const years = Array.from(new Set(transactions.map((t) => dayjs(t.dateOfEntry).ye
     fetchTransactions();
   }, []);
   
-  // Filter transactions by search, month, and year
-  useEffect(() => {
-    setFilteredTransactions(
-      transactions.filter((transaction) => {
-        const matchesSearch = `${transaction.firstName} ${transaction.surname} ${transaction.email} ${transaction.telephone}`
-          .toLowerCase()
-          .includes(search.toLowerCase());
-        const matchesMonth = month ? dayjs(transaction.dateOfEntry).format('MMMM') === month : true;
-        const matchesYear = year ? dayjs(transaction.dateOfEntry).format('YYYY') === year : true;
-        return matchesSearch && matchesMonth && matchesYear;
-      })
-    );
-  }, [search, month, year, transactions]);
 
   if (loading) return <CircularProgress />;
 
   return (
     <div>
       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-        {/* Filters */}
-        {/* <TextField
-          label="Search by Name, Email, or Telephone"
-          variant="outlined"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1 }}
-        /> */}
         <FormControl style={{ minWidth: 120 }}>
           <InputLabel>Month</InputLabel>
           <Select value={month || ''} onChange={(e) => setMonth(e.target.value || undefined)}>
@@ -137,10 +116,6 @@ const years = Array.from(new Set(transactions.map((t) => dayjs(t.dateOfEntry).ye
           <TableHead>
             <TableRow>
               <TableCell>Date</TableCell>
-              {/* <TableCell>First Name</TableCell>
-              <TableCell>Last Name</TableCell>
-              <TableCell>Email</TableCell> */}
-              {/* <TableCell>Telephone</TableCell> */}
               <TableCell>Savings Deposits</TableCell>
               <TableCell>Withdrawals</TableCell>
               <TableCell> Total Savings</TableCell>
@@ -152,10 +127,7 @@ const years = Array.from(new Set(transactions.map((t) => dayjs(t.dateOfEntry).ye
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
                 <TableCell>{dayjs(transaction.dateOfEntry).format('DD MMM YYYY')}</TableCell>
-                {/* <TableCell>{transaction.firstName}</TableCell>
-                <TableCell>{transaction.surname}</TableCell>
-                <TableCell>{transaction.email}</TableCell>
-                <TableCell>{transaction.telephone}</TableCell> */}
+             
                 <TableCell>{transaction.savingsDeposits}</TableCell>
                 <TableCell>{transaction.withdrawals}</TableCell>
                 <TableCell>{transaction.savingsBalance}</TableCell>
