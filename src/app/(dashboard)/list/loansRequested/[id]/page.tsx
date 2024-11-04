@@ -11,6 +11,11 @@ interface LoanRequestDetailProps {
   onClose: () => void;
 }
 
+// interface LoanRequestDetailProps {
+//   loanId: string;
+//   onClose: () => void;
+// }
+
 interface Transaction {
   id: string;
   savingsBalance: number;
