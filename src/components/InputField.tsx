@@ -4,9 +4,9 @@ type InputFieldProps = {
   label: string;
   type?: string;
   name: string;
-  register?: UseFormRegister<any>; // TypeScript type for register
+  register?: UseFormRegister<any>;
   defaultValue?: string;
-  error?: FieldError;
+  error?: FieldError | string; // Allow string type
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
   disabled?: boolean;
 };
@@ -32,7 +32,7 @@ const InputField = ({
         {...inputProps}
         disabled={disabled}
       />
-      {error?.message && <p className="text-xs text-red-400">{error.message}</p>}
+      {error && <p className="text-xs text-red-400">{typeof error === 'string' ? error : error.message}</p>}
     </div>
   );
 };
