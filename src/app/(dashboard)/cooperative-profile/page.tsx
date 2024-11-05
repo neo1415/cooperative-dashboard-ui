@@ -77,7 +77,7 @@ interface CooperativeDetails {
   registrationNumber: string;
 }
 
-interface CooperativeData {
+export interface CooperativeData {
   id: string;
   cooperativeName: string;
   email: string;
