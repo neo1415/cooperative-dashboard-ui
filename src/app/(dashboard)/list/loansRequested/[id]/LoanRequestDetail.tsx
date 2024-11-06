@@ -128,25 +128,26 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
     try {
       const token = await auth.currentUser?.getIdToken();
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-
+  
+      // Get the consolidated interest rate based on the current amount and duration
       const consolidatedInterestRate = getConsolidatedInterestRate(editableAmount, loanRequest?.durationOfLoan || 0);
-
+  
       // Update loan amount and new interest rate
       await axios.put(
         `${serverURL}/updateLoanAmount/${loanId}`, 
-        { amountGranted: editableAmount, interestRate: consolidatedInterestRate }, 
+        { amountGranted: editableAmount, interestRate: consolidatedInterestRate },  // Include interestRate
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
+  
       alert('Loan amount and interest rate updated successfully');
       onClose();
     } catch (error) {
       console.error('Error updating loan amount and interest rate:', error);
     }
   };
-
+  
 
   const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
