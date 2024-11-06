@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
-import TransactionsTable from "../list/member-transactions/page";
+import TransactionsTable from "../../../components/TransactionsTable";
 
 interface Member {
   id: string;

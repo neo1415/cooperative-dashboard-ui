@@ -11,7 +11,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CustomModal from '@/components/CustomModal';
 
-interface Setting {
+export interface Setting {
   id: string;
   minDurationMonths: number | null;
   maxDurationMonths: number | null;

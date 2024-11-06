@@ -49,6 +49,15 @@ interface LoanRequest {
   };
   transactions?: Transaction[];
 }
+export interface Setting {
+  id: string;
+  minDurationMonths: number | null;
+  maxDurationMonths: number | null;
+  durationInterestRate: number | null;
+  minAmount: number | null;
+  maxAmount: number | null;
+  amountInterestRate: number | null;
+}
 
 const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }) => {
   const { role, cooperativeId, memberId } = useAuth();
@@ -58,6 +67,21 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [settings, setSettings] = useState<Setting[]>([]);
+
+  // Fetch loan interest settings when role or cooperativeId changes
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (role === 'cooperative-admin' && cooperativeId) {
+        const token = await auth.currentUser?.getIdToken();
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-loan-interest-settings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status === 200) setSettings(response.data);
+      }
+    };
+    fetchSettings();
+  }, [role, cooperativeId]);
 
   useEffect(() => {
     const fetchLoanRequestDetails = async () => {
@@ -65,48 +89,64 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
         setLoading(false);
         return;
       }
-
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-
-        const response = await axios.get<LoanRequest>(`${serverURL}/loan-requests/${loanId}/individual`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 200) {
-          setLoanRequest(response.data);
-          setEditableAmount(response.data.amountGranted);
-        }
-      } catch (error) {
-        console.error('Error fetching loan request details:', error);
-      } finally {
-        setLoading(false);
+      const token = await auth.currentUser?.getIdToken();
+      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+      const response = await axios.get(`${serverURL}/loan-requests/${loanId}/individual`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 200) {
+        setLoanRequest(response.data);
+        setEditableAmount(response.data.amountGranted);
       }
+      setLoading(false);
     };
-
     fetchLoanRequestDetails();
   }, [loanId, role, cooperativeId, memberId]);
 
+  // Safely identify interest rate based on settings
+  const getConsolidatedInterestRate = (amount: number, duration: number) => {
+    // Filter to ensure no `null` values are compared
+    const amountRate = settings.find(
+      setting =>
+        setting.minAmount !== null &&
+        setting.maxAmount !== null &&
+        amount >= setting.minAmount &&
+        amount <= setting.maxAmount
+    )?.amountInterestRate || 0;
+
+    const durationRate = settings.find(
+      setting =>
+        setting.minDurationMonths !== null &&
+        setting.maxDurationMonths !== null &&
+        duration >= setting.minDurationMonths &&
+        duration <= setting.maxDurationMonths
+    )?.durationInterestRate || 0;
+
+    return (amountRate + durationRate) / 2;
+  };
   const handleAmountChange = async () => {
     try {
       const token = await auth.currentUser?.getIdToken();
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
 
-      await axios.put(`${serverURL}/updateLoanAmount/${loanId}`, { amountGranted: editableAmount }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const consolidatedInterestRate = getConsolidatedInterestRate(editableAmount, loanRequest?.durationOfLoan || 0);
 
-      alert('Loan amount updated successfully');
+      // Update loan amount and new interest rate
+      await axios.put(
+        `${serverURL}/updateLoanAmount/${loanId}`, 
+        { amountGranted: editableAmount, interestRate: consolidatedInterestRate }, 
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert('Loan amount and interest rate updated successfully');
       onClose();
     } catch (error) {
-      console.error('Error updating loan amount:', error);
+      console.error('Error updating loan amount and interest rate:', error);
     }
   };
+
 
   const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
