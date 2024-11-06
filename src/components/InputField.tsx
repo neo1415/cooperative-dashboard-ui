@@ -5,7 +5,7 @@ type InputFieldProps = {
   type?: string;
   name: string;
   register?: UseFormRegister<any>;
-  defaultValue?: string;
+  value?: string;
   error?: FieldError | string; // Allow string type
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
   disabled?: boolean;
@@ -16,7 +16,7 @@ const InputField = ({
   type = "text",
   name,
   register,
-  defaultValue,
+  value,
   error,
   inputProps,
   disabled,
@@ -27,7 +27,7 @@ const InputField = ({
       <input
         type={type}
         {...(register && !disabled ? register(name) : {})}
-        defaultValue={defaultValue}
+        defaultValue={value}
         className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
         {...inputProps}
         disabled={disabled}

@@ -8,7 +8,7 @@ import { CSVLink } from "react-csv";
 import axios from "axios";
 import { auth } from "@/app/api/config";
 import { useRouter } from "next/navigation";
-import LoanRequestDetailPage from "./[id]/page";
+import LoanRequestDetail from "./[id]/LoanRequestDetail";
 import { useAuth } from "@/context/AuthCOntext";
 
 interface LoanRequest {
@@ -303,7 +303,7 @@ const LoanRequestsPage: React.FC = () => {
 
       <Dialog open={!!selectedLoanId} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogContent>
-          {selectedLoanId && <LoanRequestDetailPage loanId={selectedLoanId} onClose={handleCloseModal} />}
+          {selectedLoanId && <LoanRequestDetail loanId={selectedLoanId} onClose={handleCloseModal} />}
         </DialogContent>
       </Dialog>
       {/* Confirmation Modal */}

@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import InputField from "../InputField";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { useAuth } from "@/context/AuthCOntext"
+import { useAuth } from "@/context/AuthCOntext";
 import { auth } from "@/app/api/config";
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
 
@@ -18,7 +18,7 @@ interface Range {
 }
 
 interface Setting {
-  id: string; // Allow `id` to be a string for temporary entries
+  id: string;
   minDurationMonths: number | null;
   maxDurationMonths: number | null;
   durationInterestRate: number | null;
@@ -27,8 +27,6 @@ interface Setting {
   amountInterestRate: number | null;
 }
 
-
-// Zod schema to validate the form
 const schema = z.object({
   amountRequired: z.string().min(1, { message: "Amount Required is required!" }),
   purposeOfLoan: z.string().min(1, { message: "Purpose of Loan is required!" }),
@@ -45,15 +43,17 @@ const schema = z.object({
 export type Inputs = z.infer<typeof schema>;
 
 const LoanForm = () => {
-  const [loanInterest, setLoanInterest] = useState(10); // Default interest rate
+  const [loanInterest, setLoanInterest] = useState(10);
   const [amountGranted, setAmountGranted] = useState(0);
+  const [amountInterestRate, setAmountInterestRate] = useState(loanInterest);
+  const [durationInterestRate, setDurationInterestRate] = useState(loanInterest);
   const [expectedReimbursementDate, setExpectedReimbursementDate] = useState("");
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [amountRanges, setAmountRanges] = useState<Range[]>([]);
   const [durationRanges, setDurationRanges] = useState<Range[]>([]);
   const [settings, setSettings] = useState<Setting[]>([]);
-  const { role, cooperativeId, memberId } = useAuth(); // Custom hook to fetch user role
+  const { role, cooperativeId, memberId, getCurrentUserToken } = useAuth();
 
   const { register, handleSubmit, formState: { errors }, watch } = useForm<Inputs>({
     resolver: zodResolver(schema),
@@ -63,18 +63,18 @@ const LoanForm = () => {
   const amountRequired = watch("amountRequired");
   const durationOfLoan = watch("durationOfLoan");
 
-  // Fetch loan settings based on user role
   useEffect(() => {
     const fetchSettings = async () => {
-      if (role === 'cooperative-admin') {
-        setPersistence(auth, browserSessionPersistence).catch((error) => {
-          console.error("Persistence error: ", error);
-        });
+      if (role === 'cooperative-admin' || role === 'member') {
+        console.log("Fetching loan settings for role:", role);
 
-        auth.onAuthStateChanged(async (user) => {
-          if (user) {
-            try {
+        try {
+          await setPersistence(auth, browserSessionPersistence);
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
               const token = await user.getIdToken();
+              console.log("Token obtained:", token);
+
               const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-loan-interest-settings`, {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -83,28 +83,27 @@ const LoanForm = () => {
               });
 
               if (response.status === 200) {
-                // Convert IDs to strings if not already
+                console.log("Loan settings fetched successfully:", response.data);
+
                 const fetchedSettings: Setting[] = response.data.map((setting: any) => ({
                   ...setting,
-                  id: String(setting.id), // Ensure ID is a string
+                  id: String(setting.id),
                 }));
                 setSettings(fetchedSettings);
-                console.log('settings:',fetchedSettings);
-
               } else {
                 throw new Error('Failed to fetch settings');
               }
-            } catch (error) {
-              console.error("Error fetching settings:", error);
             }
-          }
-        });
+          });
+        } catch (error) {
+          console.error("Persistence error:", error);
+        }
       }
     };
+
     fetchSettings();
   }, [role]);
-  console.log('settings:');
-  // Set ranges based on fetched settings
+
   useEffect(() => {
     if (settings.length > 0) {
       const amountRangeData = settings.map((setting) => ({
@@ -121,12 +120,11 @@ const LoanForm = () => {
       setAmountRanges(amountRangeData);
       setDurationRanges(durationRangeData);
     }
-    console.log('settings:',settings);
+    console.log('Settings updated:', settings);
   }, [settings]);
 
-  // Calculate amount to be paid back and reimbursement date
   useEffect(() => {
-    if (amountRequired && durationOfLoan && settings.length > 0) {
+    if (amountRequired && durationOfLoan) {
       const amount = parseFloat(amountRequired);
       const duration = parseInt(durationOfLoan);
 
@@ -140,49 +138,72 @@ const LoanForm = () => {
       const amountRate = selectedAmountRange?.rate ?? loanInterest;
       const durationRate = selectedDurationRange?.rate ?? loanInterest;
 
+      setAmountInterestRate(amountRate);
+      setDurationInterestRate(durationRate);
+
+      console.log("Selected amount range rate:", amountRate);
+      console.log("Selected duration range rate:", durationRate);
+
+      // Consolidate both rates into a single loan interest value
       const totalInterestRate = (amountRate + durationRate) / 2;
+      setLoanInterest(totalInterestRate);
+
       const interest = amount * Math.pow((1 + totalInterestRate / 100), duration / 12) - amount;
       setAmountGranted(amount + interest);
-      
+
+      console.log("Calculated interest:", interest);
+      console.log("Total amount granted:", amount + interest);
 
       const now = new Date();
       const reimbursementDate = new Date(now.setMonth(now.getMonth() + duration));
       setExpectedReimbursementDate(reimbursementDate.toISOString().split("T")[0]);
+      console.log("Expected reimbursement date:", reimbursementDate.toISOString().split("T")[0]);
     }
-  }, [amountRequired, durationOfLoan, amountRanges, durationRanges, loanInterest, settings]);
+  }, [amountRequired, durationOfLoan, amountRanges, durationRanges, loanInterest]);
 
-  // Submit loan request
-
-  const onSubmit = handleSubmit(async (data) => {
-    // const memberId = localStorage.getItem('userId');
-    // const cooperativeId = localStorage.getItem('cooperativeId');
-
-    if (!cooperativeId || !memberId) {
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    console.log('cooperativeId:', cooperativeId);
+    console.log('memberId:', memberId);
+  
+    if (!memberId) {
       setSubmitError('Error: Cooperative or Member ID not found. Please log in again.');
       return;
     }
-
+  
+    // Prepare the payload with necessary fields only
     const payload = {
-      memberId,
       cooperativeId,
-      ...data,
-      amountGranted,
-      expectedReimbursementDate,
-      loanInterest,
+      memberId,
+      amountRequired: parseInt(data.amountRequired, 10),
+      purposeOfLoan: data.purposeOfLoan,
+      durationOfLoan: parseInt(data.durationOfLoan, 10),
+      bvn: data.bvn,
+      nameOfSurety1: data.nameOfSurety1,
+      surety1MembersNo: data.surety1MembersNo,
+      surety1telePhone: data.surety1telePhone,
+      nameOfSurety2: data.nameOfSurety2,
+      surety2MembersNo: data.surety2MembersNo,
+      surety2telePhone: data.surety2telePhone,
     };
-
+  
+    console.log('Payload:', payload); // Debug log for payload
+  
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-
+  
     try {
-      const token = localStorage.getItem("firebaseToken");
+      const token = await getCurrentUserToken();
+      if (!token) {
+        throw new Error('User not authenticated. Please log in again.');
+      }
+  
       const response = await axios.post(`${serverURL}/loan-request`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (response.status === 200) {
-        router.push('/success');
+        router.push('/member');
       } else {
         setSubmitError(response.data.error || 'Failed to submit loan request');
       }
@@ -190,10 +211,13 @@ const LoanForm = () => {
       console.error('Error submitting form:', error);
       setSubmitError(error.response?.data?.error || error.message || 'Error connecting to the server.');
     }
-  });
+  };
+  
+
+  
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
+   <form className="flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
       <h1 className="text-xl font-semibold">Loan Request</h1>
 
       {/* Loan Details Section */}
@@ -220,39 +244,34 @@ const LoanForm = () => {
         />
       </div>
 
-      {/* Calculated Fields Section */}
-<span className="text-xs text-gray-400 font-medium">Calculated Loan Details</span>
-<div className="flex justify-between flex-wrap gap-4">
-  <InputField
-    label="Total Amount to Be Paid Back"
-    name="totalAmountToBePaidBack"
-    defaultValue={amountGranted.toFixed(2)}
-    disabled
-  />
-  <InputField
-    label="Interest Rate for Amount (%)"
-    name="amountInterestRate"
-    defaultValue={(amountRanges.find(range => parseFloat(amountRequired) >= range.min && parseFloat(amountRequired) <= range.max)?.rate ?? loanInterest).toFixed(2)}
-   disabled
-  />
-  <InputField
-    label="Interest Rate for Duration (%)"
-    name="durationInterestRate"
-    defaultValue={(durationRanges.find(range => parseInt(durationOfLoan) >= range.min && parseInt(durationOfLoan) <= range.max)?.rate ?? loanInterest).toFixed(2)}
-   disabled
-  />
-  <InputField
-    label="Expected Reimbursement Date"
-    name="expectedReimbursementDate"
-    defaultValue={expectedReimbursementDate}
-    disabled
-  />
-</div>
-
+      {/* Calculated Fields Display */}
+      {amountRequired && durationOfLoan && (
+        <div className="flex flex-wrap gap-4 mt-4">
+          <div className="bg-gray-100 p-4 rounded shadow">
+            <label className="font-medium">Total Amount to Be Paid Back:</label>
+            <div>{amountGranted.toFixed(2)}</div>
+          </div>
+          <div className="bg-gray-100 p-4 rounded shadow">
+            <label className="font-medium">Consolidated Loan Interest Rate (%):</label>
+            <div>{loanInterest.toFixed(2)}</div>
+          </div>
+          <div className="bg-gray-100 p-4 rounded shadow">
+            <label className="font-medium">Expected Reimbursement Date:</label>
+            <div>{expectedReimbursementDate}</div>
+          </div>
+        </div>
+      )}
 
       {/* Surety Information */}
       <span className="text-xs text-gray-400 font-medium">Surety Information</span>
       <div className="flex justify-between flex-wrap gap-4">
+      <InputField
+          label="BVN"
+          name="bvn"
+          register={register}
+          error={errors?.bvn}
+        />
+        
         <InputField
           label="Surety 1 Name"
           name="nameOfSurety1"
@@ -290,7 +309,6 @@ const LoanForm = () => {
           error={errors?.surety2telePhone}
         />
       </div>
-
       {submitError && <span className="text-red-500">{submitError}</span>}
 
       <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">
