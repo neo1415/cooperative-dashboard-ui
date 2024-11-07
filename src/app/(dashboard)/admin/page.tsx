@@ -23,10 +23,10 @@ const AdminPage = () => {
         {/* Middle Charts */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="w-full lg:w-1/3 h-[450px]">
-            <CountChart totalSavingsCount={totalSavingsCount} totalLoansApproved={totalLoansApproved} />
+            {/* <CountChart totalSavingsCount={totalSavingsCount} totalLoansApproved={totalLoansApproved} /> */}
           </div>
           <div className="w-full lg:w-2/3 h-[450px]">
-            <AssetChart totalSavingsCount={totalSavingsCount} totalLoansApproved={totalLoansApproved} />
+            {/* <AssetChart totalSavingsCount={totalSavingsCount} totalLoansApproved={totalLoansApproved} /> */}
           </div>
         </div>
 
