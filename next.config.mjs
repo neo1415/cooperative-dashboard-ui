@@ -3,7 +3,10 @@ const nextConfig = {
     images: {
       remotePatterns: [{ hostname: "images.pexels.com" }],
     },
-    experimental: { esmExternals: 'loose' },
+    experimental: {
+      esmExternals: 'loose',
+      forceSwcTransforms: true, // Force SWC transformations
+    },
     typescript: {
       ignoreBuildErrors: true, // Disables TypeScript errors in production builds
     },

@@ -20,18 +20,24 @@ const MemberSignUpPage = () => {
     const fetchCooperatives = async () => {
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
       const cooperativesEndpoint = `${serverURL}/cooperatives`;
-
+  
       try {
         const response = await fetch(cooperativesEndpoint);
         const data = await response.json();
-        setCooperatives(data);
+        console.log('Fetched cooperatives:', data); // Check if data is an array
+        if (Array.isArray(data)) {
+          setCooperatives(data);
+        } else {
+          console.error('Data is not an array:', data);
+        }
       } catch (error) {
         console.error('Error fetching cooperatives:', error);
       }
     };
-
+  
     fetchCooperatives();
   }, []);
+  
 
   const submitRegistration = async () => {
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
@@ -134,11 +140,11 @@ const MemberSignUpPage = () => {
             required
           >
             <option value="">Select Cooperative</option>
-            {cooperatives.map((coop) => (
-              <option key={coop.id} value={coop.id}>
-                {coop.cooperativeName}
-              </option>
-            ))}
+            {Array.isArray(cooperatives) && cooperatives.map((coop) => (
+  <option key={coop.id} value={coop.id}>
+    {coop.cooperativeName}
+  </option>
+))}
           </select>
         </div>
 
