@@ -2,14 +2,11 @@
 
 import Performance from "@/components/Performance";
 import Image from "next/image";
-import Link from "next/link";
-import {  closePaymentModal, FlutterWaveButton } from 'flutterwave-react-v3';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
 import TransactionsTable from "../../../components/TransactionsTable";
-import BigCalendar from "@/components/BigCalender";
 import EventCalendar from "@/components/EventCalender";
 
 interface Member {
@@ -63,6 +60,7 @@ export interface Transaction {
 }
 
 
+
 declare global {
   interface Window {
     FlutterwaveCheckout: any;
@@ -74,34 +72,34 @@ const MemberProfilePage = () => {
   const [memberData, setMemberData] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [depositAmount, setDepositAmount] = useState<number>(100); // Default deposit depositAmount
   const [transaction, setTransaction] = useState<Transaction | null>(null);
 // 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (user) {
-          const token = await user.getIdToken();
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-          const response = await axios.get<Transaction>(`${serverURL}/single-transaction`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setTransaction(response.data);
-        } else {
-          setError('User not authenticated');
-        }
-      } catch (error) {
-        setError('Failed to fetch transaction');
-        console.error(error);
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  const fetchTransaction = async () => {
+    try {
+      setLoading(true);
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        const response = await axios.get(`${serverURL}/single-transaction`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTransaction(response.data || { grandTotal: 0, savingsBalance: 0, totalWithdrawals: 0, savingsDeposits: 0 });
+      } else {
+        setError('User not authenticated');
       }
-    };
+    } catch (error) {
+      setError('Transaction data not available for new users');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchTransaction();
-  }, []);
+  fetchTransaction();
+}, []);
+
 
   useEffect(() => {
     const fetchMemberData = async () => {

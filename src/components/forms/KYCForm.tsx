@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthCOntext";
+import { auth } from "@/app/api/config";
 
 const KYCForm = () => {
   const {
@@ -22,45 +23,63 @@ const KYCForm = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imgFile, setImgFile] = useState<File | null>(null); // New state for image file
-  const { role, memberId } = useAuth();
+  const { role, memberId, getCurrentUserToken } = useAuth();
 
   const onSubmit = handleSubmit(async (data) => {
     if (!memberId) {
-      setSubmitError('Error: Member ID not found. Please log in again.');
+      setSubmitError("Error: Member ID not found. Please log in again.");
       return;
     }
 
-    // Prepare form data for submission with file upload
     const formData = new FormData();
     formData.append("memberId", memberId);
+    
+    // Log data to be sent
+    console.log("Form Data (before appending):", data);
+
     Object.keys(data).forEach((key) => {
-      formData.append(key, data[key as keyof MemberSchema] as string);
+      const value = data[key as keyof MemberSchema];
+      if (value !== undefined) {
+        formData.append(key, value.toString());
+      }
     });
+
     if (imgFile) {
-      formData.append("img", imgFile); // Append image file
+      formData.append("img", imgFile);
     }
 
-    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+    // Log FormData contents
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(`FormData key: ${key}, value: ${value}`);
+    // }
+
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 
     try {
+      const token = await getCurrentUserToken();
+      if (!token) {
+        setSubmitError("User not authenticated. Please log in again.");
+        return;
+      }
+
+      // Log token being sent
+      console.log("Authorization Token:", token);
+
       const response = await axios.post(`${serverURL}/member-kyc`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.status === 200) {
-        router.push('/');
+        router.push("/");
       } else {
-        setSubmitError(response.data.error || 'Failed to submit member KYC form');
+        setSubmitError(response.data.error || "Failed to submit member KYC form");
       }
     } catch (error: any) {
-      console.error('Error submitting form:', error);
-      setSubmitError(
-        error.response?.data?.error || 
-        error.message || 
-        'Error connecting to the server.'
-      );
+      console.error("Error submitting form:", error);
+      setSubmitError(error.response?.data?.error || "Error connecting to the server.");
     }
   });
 

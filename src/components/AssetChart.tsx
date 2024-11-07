@@ -1,20 +1,14 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-interface AssetChartProps {
-  totalSavingsCount: number;
-  totalLoansApproved: number;
-}
-
-const AssetChart: React.FC<AssetChartProps> = ({ totalSavingsCount, totalLoansApproved }) => {
-  // Update the data structure to have separate fields for savings and loans
+const AssetChart = ({ totalSavingsCount, totalLoansApproved }) => {
   const data = [
     { name: 'Savings vs Loans', savings: totalSavingsCount, loansApproved: totalLoansApproved },
   ];
 
   return (
-    <div className='bg-white rounded-lg p-4 h-full'>
-      <h1 className='text-lg font-semibold'>Savings & Loans Comparison</h1>
+    <div className="bg-white rounded-lg p-4 h-full">
+      <h1 className="text-lg font-semibold">Savings & Loans Comparison</h1>
       <ResponsiveContainer width="100%" height="90%">
         <BarChart data={data} barSize={40}>
           <CartesianGrid strokeDasharray="3 3" />
