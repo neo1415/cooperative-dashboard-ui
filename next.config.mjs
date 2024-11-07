@@ -3,6 +3,7 @@ const nextConfig = {
     images: {
       remotePatterns: [{ hostname: "images.pexels.com" }],
     },
+    experimental: { esmExternals: 'loose' },
   };
   
   export default nextConfig;
