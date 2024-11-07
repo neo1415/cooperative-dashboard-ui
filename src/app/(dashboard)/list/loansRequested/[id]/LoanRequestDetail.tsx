@@ -103,6 +103,7 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
     fetchLoanRequestDetails();
   }, [loanId, role, cooperativeId, memberId]);
 
+
   // Safely identify interest rate based on settings
   const getConsolidatedInterestRate = (amount: number, duration: number) => {
     // Filter to ensure no `null` values are compared
@@ -129,24 +130,28 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
       const token = await auth.currentUser?.getIdToken();
       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
   
-      // Get the consolidated interest rate based on the current amount and duration
       const consolidatedInterestRate = getConsolidatedInterestRate(editableAmount, loanRequest?.durationOfLoan || 0);
   
-      // Update loan amount and new interest rate
+      console.log("Loan ID:", loanId); // Debug log for loanId
+      console.log("Amount:", editableAmount); // Debug log for amount
+      console.log("Loan Interest (used as rate):", consolidatedInterestRate); // Debug log for loan interest
+  
       await axios.put(
         `${serverURL}/updateLoanAmount/${loanId}`, 
-        { amountGranted: editableAmount, interestRate: consolidatedInterestRate },  // Include interestRate
+        { amountGranted: editableAmount, loanInterest: consolidatedInterestRate },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
   
-      alert('Loan amount and interest rate updated successfully');
+      alert('Loan amount and loan interest updated successfully');
       onClose();
     } catch (error) {
-      console.error('Error updating loan amount and interest rate:', error);
+      console.error('Error updating loan amount and loan interest:', error);
     }
   };
+  
+  
   
 
   const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {

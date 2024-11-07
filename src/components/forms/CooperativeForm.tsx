@@ -9,6 +9,7 @@ import { submitCcoperativeForm } from "@/lib/actions";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthCOntext";
 
 
 const CooperativeForm = () => {
@@ -22,15 +23,15 @@ const CooperativeForm = () => {
   
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
+  const { role, cooperativeId } = useAuth();
   const onSubmit = handleSubmit(async (data) => {
     // Retrieve userId instead of cooperativeId if that's the correct key
-    const cooperativeId = localStorage.getItem('userId'); // Use 'userId' instead
+    // const cooperativeId = localStorage.getItem('userId'); // Use 'userId' instead
     
-    if (!cooperativeId) {
-      setSubmitError('Error: Cooperative ID not found. Please log in again.');
-      return;
-    }
+    // if (!cooperativeId) {
+    //   setSubmitError('Error: Cooperative ID not found. Please log in again.');
+    //   return;
+    // }
 
     const payload = { cooperativeId, ...data };
 

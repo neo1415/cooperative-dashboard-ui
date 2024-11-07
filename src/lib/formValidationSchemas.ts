@@ -140,6 +140,11 @@ export const memberSchema = z.object({
   stateOfOrigin: z.string().min(1, { message: "State of Origin is required!" }),
   lga2: z.string().min(1, { message: "LGA2 is required!" }),
   amountPaid: z.string().min(1, { message: "Amount Paid is required!" }),
+  accountNumber: z
+  .string()
+  .min(1, { message: "Account Number is required!" })
+  .max(10, { message: "Account Number must be a valid number!" }),
+  bankName: z.string().min(1, { message: "Bank Name is required!" }),
   nextOfKinName: z.string().min(1, { message: "Next of Kin Name is required!" }),
   nextOfKinPhone: z
     .string()
@@ -150,7 +155,7 @@ export const memberSchema = z.object({
     .min(1, { message: "Next of Kin Phone 2 is required!" })
     .max(15, { message: "Next of Kin Phone 2 must be a valid number!" }),
   sponsor: z.string().min(1, { message: "Sponsor is required!" }),
-  // img: z.string().optional(), // Assuming the image is a URL, make it optional
+  img: z.string().optional(), // Assuming the image is a URL, make it optional
 
 });
 
