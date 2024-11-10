@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const cooperativeSchema = z.object({
+  img: z.string().optional(),
   cooperativeName: z
     .string()
     .min(1, { message: "Cooperative Name is required!" }),
@@ -88,6 +89,7 @@ export const cooperativeSchema = z.object({
 
   directorSourceOfIncome: z.enum(["SALARYORBUSINESSINCOME", "INVESTMENTSORDIVIDENDS"], {
     message: "Invalid source of income!",
+    
   }),
 });
 

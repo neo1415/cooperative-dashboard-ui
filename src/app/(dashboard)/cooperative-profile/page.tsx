@@ -75,6 +75,7 @@ interface CooperativeDetails {
   directorEmail: string;
   directorPosition: string;
   registrationNumber: string;
+  img: string
 }
 
 export interface CooperativeData {
@@ -104,10 +105,16 @@ const CooperativeProfilePage = () => {
     const fetchCooperativeData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get<CooperativeData>(`${process.env.NEXT_PUBLIC_SERVER_URL}/cooperative/profileSettings`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("firebaseToken")}` },
-        });
-        setCooperativeData(response.data);
+        const user = auth.currentUser;
+        if (user){
+          const token = await user.getIdToken();
+          const response = await axios.get<CooperativeData>(`${process.env.NEXT_PUBLIC_SERVER_URL}/cooperative/profileSettings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCooperativeData(response.data);
+        } else {
+          setError("User not Authenticated")
+        }
       } catch (err) {
         setError("Failed to fetch cooperative data");
         console.error("Error:", err);
@@ -131,13 +138,16 @@ const CooperativeProfilePage = () => {
           {/* USER INFO CARD */}
           <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-1/3">
-              <Image
-                src="https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt=""
-                width={144}
-                height={144}
-                className="w-36 h-36 rounded-full object-cover"
-              />
+            <Image
+  src={
+    cooperativeData?.cooperativeDetails?.[0]?.img ||
+    "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"
+  }
+  alt="Cooperative Image"
+  width={144}
+  height={144}
+  className="w-36 h-36 rounded-full object-cover"
+/>
             </div>
             <div className="w-2/3 flex flex-col justify-between gap-4">
               {/* <h1 className="text-xl font-semibold">{cooperativeData?.surname} {cooperativeData?.firstName}</h1> */}

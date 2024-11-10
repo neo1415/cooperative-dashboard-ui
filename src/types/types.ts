@@ -26,6 +26,7 @@ export interface Member {
     nextOfKinPhone: string;
     nextOfKinPhone2?: string;
     sponsor: string;
+    img:string
   }
 
   export interface LoanApprove {
@@ -49,7 +50,11 @@ export interface Member {
       firstName: string;
       surname: string;
       email: string;
+      memberDetails:{
+        img:string
+      }
     };
+
     cooperative: {
       id: string;
       cooperativeName: string;

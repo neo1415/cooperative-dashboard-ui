@@ -5,11 +5,43 @@ import React, { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/app/api/config';
+import { CooperativeData } from '@/app/(dashboard)/cooperative-profile/page';
+import axios from 'axios';
+
+
 
 const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [cooperativeData, setCooperativeData] = useState<CooperativeData | null>(null);
+
+  useEffect(() => {
+    const fetchCooperativeData = async () => {
+      try {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (user){
+          const token = await user.getIdToken();
+          const response = await axios.get<CooperativeData>(`${process.env.NEXT_PUBLIC_SERVER_URL}/cooperative/profileSettings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCooperativeData(response.data);
+        } else {
+          setError("User not Authenticated")
+        }
+      } catch (err) {
+        setError("Failed to fetch cooperative data");
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCooperativeData();
+  }, []);
+  
 
   useEffect(() => {
     // Listen for changes to the authenticated user
@@ -80,12 +112,19 @@ const Navbar = () => {
             className="bg-white rounded-full w-9 h-9 flex items-center justify-center cursor-pointer"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            {user && user.photoURL ? (
-              <Image
-                src={user.photoURL}
-                alt="User Profile"
-                className="w-9 h-9 rounded-full"
-              />
+            {user && cooperativeData?.cooperativeDetails?.[0]?.img ? (
+                  
+                         <Image
+               src={
+                 cooperativeData?.cooperativeDetails?.[0]?.img ||
+                 "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"
+               }
+               alt="Cooperative Image"
+               width={100}
+               height={100}
+               className="w-100 h-100 rounded-full object-cover"
+             />
+                       
             ) : user && user.displayName ? (
               <span className="text-sm font-medium">
                 {getInitials(user.displayName)}

@@ -1,7 +1,6 @@
 "use client";
 
-import CooperativeForm from "../../components/forms/CooperativeForm";
-
+import CooperativeForm from "../../../components/forms/CooperativeForm"
 
 const CooperativeFormPage = () => {
   return (

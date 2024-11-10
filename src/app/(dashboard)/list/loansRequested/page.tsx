@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, CircularProgress, Menu, MenuItem, Dialog, DialogActions, DialogContent, DialogTitle
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, CircularProgress, Menu, MenuItem, Dialog, DialogActions, DialogContent, DialogTitle,  Avatar,
 } from "@mui/material";
 import { CSVLink } from "react-csv";
 import axios from "axios";
@@ -39,6 +39,9 @@ interface LoanRequest {
       savingsBalance: number,
       savingsDeposits: number
     }
+    memberDetails:{
+      img:string;
+    }
   };
   cooperative: {
     id: string;
@@ -68,7 +71,9 @@ const LoanRequestsPage: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedLoanId(null);
   };
-
+  const getInitials = (firstName: string, surname: string) => {
+    return `${firstName.charAt(0).toUpperCase()}${surname.charAt(0).toUpperCase()}`;
+  };
 
 
   const { role, cooperativeId, memberId } = useAuth();
@@ -171,7 +176,7 @@ const LoanRequestsPage: React.FC = () => {
 
   const headers = [
     // { label: "Loan ID", key: "id" },
-    { label: "Cooperative Name", key: "cooperativeName" },
+    { label: "", key: "member.img" },
     { label: "Email", key: "member.email" },
     { label: "First Name", key: "member.firstName" },
     { label: "Surname", key: "member.surname" },
@@ -232,8 +237,30 @@ const LoanRequestsPage: React.FC = () => {
             {filteredLoanRequests.length > 0 ? (
               filteredLoanRequests.map((loanRequest) => (
                 <TableRow key={loanRequest.id}>
-                  {/* <TableCell>{loanRequest.id}</TableCell> */}
-                  <TableCell>{loanRequest.cooperative.cooperativeName}</TableCell>
+                  <TableCell>
+                  {loanRequest.member.memberDetails.img ? (
+                    <Avatar
+                      src={loanRequest.member.memberDetails.img}
+                      alt="member-profile image"
+                      sx={{ width: 40, height: 40 }}
+                    />
+                  ) : (
+                    <Avatar
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        bgcolor: '#9c27b0', // Purple background
+                        color: '#fff',
+                      }}
+                    >
+                      {getInitials(
+                        loanRequest.member.firstName,
+                        loanRequest.member.surname
+                      )}
+                    </Avatar>
+                  )}
+                    </TableCell>
+                  {/* <TableCell>{loanRequest.cooperative.cooperativeName}</TableCell> */}
                   <TableCell>{loanRequest.member.email}</TableCell>
                   <TableCell>{loanRequest.member.firstName}</TableCell>
                   <TableCell>{loanRequest.member.surname}</TableCell>

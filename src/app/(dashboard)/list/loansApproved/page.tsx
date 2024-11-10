@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, CircularProgress
+  Table, TableBody, TableCell, Avatar,TableContainer, TableHead, TableRow, Paper, Button, TextField, CircularProgress
 } from "@mui/material";
 import { CSVLink } from "react-csv";
 import axios from "axios";
@@ -16,6 +16,11 @@ const LoanApprovedPage: React.FC = () => {
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  const getInitials = (firstName: string, surname: string) => {
+    return `${firstName.charAt(0).toUpperCase()}${surname.charAt(0).toUpperCase()}`;
+  };
+
 
   // Fetch loan requests on component mount
   useEffect(() => {
@@ -70,7 +75,7 @@ const LoanApprovedPage: React.FC = () => {
   };
 
   const headers = [
-    { label: "Loan ID", key: "id" },
+    { label: "", key: "member.img" },
     { label: "Cooperative Name", key: "cooperativeName" },
     { label: "Email", key: "member.email" },
     { label: "First Name", key: "member.firstName" },
@@ -135,7 +140,29 @@ const LoanApprovedPage: React.FC = () => {
             {filteredLoanApproved.length > 0 ? (
               filteredLoanApproved.map((loanApprove) => (
                 <TableRow key={loanApprove.id}>
-                  <TableCell>{loanApprove.id}</TableCell>
+                                 <TableCell>
+                  {loanApprove.member.memberDetails.img ? (
+                    <Avatar
+                      src={loanApprove.member.memberDetails.img}
+                      alt="member-profile image"
+                      sx={{ width: 40, height: 40 }}
+                    />
+                  ) : (
+                    <Avatar
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        bgcolor: '#9c27b0', // Purple background
+                        color: '#fff',
+                      }}
+                    >
+                      {getInitials(
+                        loanApprove.member.firstName,
+                        loanApprove.member.surname
+                      )}
+                    </Avatar>
+                  )}
+                    </TableCell>
                   <TableCell>{loanApprove.cooperative.cooperativeName}</TableCell>
                   <TableCell>{loanApprove.member.email}</TableCell>
                   <TableCell>{loanApprove.member.firstName}</TableCell>

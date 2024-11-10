@@ -28,6 +28,7 @@ interface MemberDetails {
   sex: string;
   residentialAddress: string
   occupation: string;
+  img: string;
 }
 
 export interface Transaction {
@@ -164,9 +165,9 @@ const MemberSavingsPage = () => {
           {/* USER INFO CARD */}
           <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-1/3">
-              <Image
-                src="https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt=""
+            <Image
+                src={memberData?.memberDetails?.img|| "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+                alt="member-profile-picture"
                 width={144}
                 height={144}
                 className="w-36 h-36 rounded-full object-cover"
@@ -267,7 +268,7 @@ const MemberSavingsPage = () => {
         </div>
         {/* BOTTOM */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Savings & WIthdrawals</h1>
+          <h1>Savings & Loans</h1>
           <TransactionsTable />
         </div>
       </div>
@@ -299,8 +300,8 @@ const MemberSavingsPage = () => {
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
             
             <div className="p-3 rounded-md bg-lamaYellowLight" >
-             Withdrawal
-                    {/* <FlutterWaveButton {...fwConfig} /> */}
+             Loans
+                  
                     Coming Soon
             </div>
        

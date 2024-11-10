@@ -199,7 +199,7 @@ useEffect(() => {
               className="w-36 h-36 rounded-full object-cover"
             />
             {/* Camera Icon for Upload */}
-            <label htmlFor="image-upload" className="absolute bottom-0 left-1/2 transform -translate-x-1/2 cursor-pointer">
+            {/* <label htmlFor="image-upload" className="absolute bottom-0 left-1/2 transform -translate-x-1/2 cursor-pointer">
               <FaCamera className="text-white bg-gray-800 rounded-full p-2 text-xl" />
             </label>
             <input
@@ -209,7 +209,7 @@ useEffect(() => {
               accept="image/*"
               onChange={handleImageUpload}
             />
-            {updatingImage && <p className="text-sm text-gray-500">Updating...</p>}
+            {updatingImage && <p className="text-sm text-gray-500">Updating...</p>} */}
           </div>
   
             <div className="w-2/3 flex flex-col justify-between gap-4">

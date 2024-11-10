@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthCOntext";
+import axios from "axios";
 
 
 const CooperativeForm = () => {
@@ -23,38 +24,71 @@ const CooperativeForm = () => {
   
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { role, cooperativeId } = useAuth();
+  const [imgFile, setImgFile] = useState<File | null>(null); // New state for image file
+  const { role, cooperativeId, getCurrentUserToken } = useAuth();
   const onSubmit = handleSubmit(async (data) => {
-    // Retrieve userId instead of cooperativeId if that's the correct key
-    // const cooperativeId = localStorage.getItem('userId'); // Use 'userId' instead
+    if (!cooperativeId) {
+      setSubmitError("Error: Cooperative ID not found. Please log in again.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("cooperativeId", cooperativeId);
     
-    // if (!cooperativeId) {
-    //   setSubmitError('Error: Cooperative ID not found. Please log in again.');
-    //   return;
+    // Log data to be sent
+    console.log("Form Data (before appending):", data);
+
+    Object.keys(data).forEach((key) => {
+      const value = data[key as keyof CooperativeSchema];
+      if (value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    if (imgFile) {
+      formData.append("img", imgFile);
+    }
+
+    // Log FormData contents
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(`FormData key: ${key}, value: ${value}`);
     // }
 
-    const payload = { cooperativeId, ...data };
+    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 
-    const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
     try {
-      const response = await fetch(`${serverURL}/cooperative-kyc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const token = await getCurrentUserToken();
+      if (!token) {
+        setSubmitError("User not authenticated. Please log in again.");
+        return;
+      }
+
+      // Log token being sent
+      console.log("Authorization Token:", token);
+
+      const response = await axios.post(`${serverURL}/cooperative-kyc`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      if (response.ok) {
-        router.push('/');
+      if (response.status === 200) {
+        router.push("/");
       } else {
-        const errorData = await response.json();
-        setSubmitError(errorData.error || 'Failed to submit cooperative KYC form');
+        setSubmitError(response.data.error || "Failed to submit member KYC form");
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setSubmitError('Error connecting to the server.');
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
+      setSubmitError(error.response?.data?.error || "Error connecting to the server.");
     }
   });
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImgFile(e.target.files[0]);
+    }
+  };
 
   
   return (
@@ -211,6 +245,16 @@ const CooperativeForm = () => {
     error={errors?.directorSourceOfIncome}
   />
 
+  
+      {/* Image Upload Field */}
+      <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
+        <label className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer" htmlFor="img">
+          <span className="bg-blue-500 text-white p-2 rounded">Upload Profile Image</span>
+        </label>
+        <input type="file" id="img" onChange={handleImageChange} accept="image/*" className="hidden" />
+        {imgFile && <p className="text-sm text-green-500">File selected: {imgFile.name}</p>}
+        {errors.img?.message && <p className="text-xs text-red-400">{errors.img.message.toString()}</p>}
+</div>
       </div>
       <button className="bg-blue-400 text-white p-2 rounded-md" onSubmit={onSubmit}>
         {/* {type === "create" ? "Create" : "Update"} */}

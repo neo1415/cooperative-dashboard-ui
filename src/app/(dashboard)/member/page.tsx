@@ -43,6 +43,7 @@ interface MemberDetails {
   sex: string;
   residentialAddress: string
   occupation: string;
+  img: string
 }
 
 export interface Transaction {
@@ -141,8 +142,8 @@ useEffect(() => {
           <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-1/3">
               <Image
-                src="https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt=""
+                src={memberData?.memberDetails?.img|| "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+                alt="member-profile-picture"
                 width={144}
                 height={144}
                 className="w-36 h-36 rounded-full object-cover"

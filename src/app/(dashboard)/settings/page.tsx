@@ -34,18 +34,29 @@ const LoanInterestSettings: React.FC = () => {
       if (role === 'cooperative-admin') {
         auth.onAuthStateChanged(async (user) => {
           if (user) {
-            const token = await user.getIdToken();
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-loan-interest-settings`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (response.status === 200) setSettings(response.data);
+            try {
+              const token = await user.getIdToken();
+              const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-loan-interest-settings`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              if (response.status === 200) setSettings(response.data);
+            } catch (error) {
+              if (axios.isAxiosError(error)) {
+                console.error("Axios error fetching settings:", error.message);
+                console.error("Response data:", error.response?.data);
+                console.error("Status:", error.response?.status);
+              } else {
+                console.error("Unknown error:", error);
+              }
+            }
           }
         });
       }
     };
     fetchSettings();
   }, [role]);
-
+  
   const handleAddSetting = async () => {
     auth.onAuthStateChanged(async (user) => {
       if (user) {

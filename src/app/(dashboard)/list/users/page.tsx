@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Button, CircularProgress } from '@mui/material';
+import { Table, TableBody, TableCell,Avatar, TableContainer, TableHead, TableRow, Paper, TextField, Button, CircularProgress } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import axios from 'axios';
 import { auth } from '@/app/api/config'; // Ensure auth config is correct
@@ -37,6 +37,7 @@ interface MemberDetails {
   nextOfKinPhone: string;
   nextOfKinPhone2?: string;
   sponsor: string;
+  img: string;
 }
 
 const MembersListPage: React.FC = () => {
@@ -54,6 +55,11 @@ const MembersListPage: React.FC = () => {
   .catch((error) => {
     console.error("Persistence error: ", error);
   });
+
+  const getInitials = (firstName: string, surname: string) => {
+    return `${firstName.charAt(0).toUpperCase()}${surname.charAt(0).toUpperCase()}`;
+  };
+
   // Fetch members on component mount
   useEffect(() => {
     
@@ -112,10 +118,13 @@ const MembersListPage: React.FC = () => {
 
   // CSV headers for export
   const headers = [
+  
     { label: "Email", key: "email" },
     { label: "Surname", key: "surname" },
     { label: "First Name", key: "firstName" },
+    
     { label: "Middle Name", key: "middleName" },
+    { label: "", key: "img" },
     { label: "Telephone 1", key: "telephone1" },
     { label: "Telephone 2", key: "telephone2" },
     { label: "Sex", key: "sex" },
@@ -175,6 +184,7 @@ const MembersListPage: React.FC = () => {
           <TableBody>
   {Array.isArray(filteredMembers) && filteredMembers.length > 0 ? (
     filteredMembers.map((member) => (
+      
       <TableRow key={member.id}>
         {/* Basic Member fields */}
         <TableCell>{member.email}</TableCell>
@@ -184,7 +194,32 @@ const MembersListPage: React.FC = () => {
         {/* MemberDetails fields */}
         {member.memberDetails ? (
           <>
+        
             <TableCell>{member.memberDetails.middleName || 'N/A'}</TableCell>
+            <TableCell>
+          {member.memberDetails.img ? (
+                    <Avatar
+                      src={member.memberDetails.img}
+                      alt="member-profile image"
+                      sx={{ width: 40, height: 40 }}
+                    />
+                  ) : (
+                    <Avatar
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        bgcolor: '#9c27b0', // Purple background
+                        color: '#fff',
+                      }}
+                    >
+                      {getInitials(
+                        member.firstName,
+                        member.surname
+                      )}
+                    </Avatar>
+                  )}
+
+          </TableCell>
             <TableCell>{member.memberDetails.telephone1 || 'N/A'}</TableCell>
             <TableCell>{member.memberDetails.telephone2 || 'N/A'}</TableCell>
             <TableCell>{member.memberDetails.sex || 'N/A'}</TableCell>

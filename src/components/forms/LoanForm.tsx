@@ -252,7 +252,7 @@ const LoanForm = () => {
             <div>{amountGranted.toFixed(2)}</div>
           </div>
           <div className="bg-gray-100 p-4 rounded shadow">
-            <label className="font-medium">Consolidated Loan Interest Rate (%):</label>
+            <label className="font-medium">Loan Interest Rate (%):</label>
             <div>{loanInterest.toFixed(2)}</div>
           </div>
           <div className="bg-gray-100 p-4 rounded shadow">
