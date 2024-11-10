@@ -302,7 +302,7 @@ const MemberSavingsPage = () => {
             <div className="p-3 rounded-md bg-lamaYellowLight" >
              Loans
                   
-                    Coming Soon
+                   
             </div>
        
           </div>
