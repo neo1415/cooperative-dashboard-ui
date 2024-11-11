@@ -16,7 +16,41 @@ const AdminPage = () => {
   const [cooperativeData, setCooperativeData] = useState<CooperativeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [totalLoansApproved, setTotalLoansApproved] = useState(0);
   const { getCurrentUserToken } = useAuth();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = await getCurrentUserToken();
+        if (!token) {
+          setError("No authentication token found.");
+          return;
+        }
+
+        // Fetch data from /single-transaction
+        const transactionResponse = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/single-transaction`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTotalSavings(transactionResponse.data.savingsBalance);
+
+        // Fetch data from /loan-stats
+        const loanStatsResponse = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/loan-stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTotalLoansApproved(loanStatsResponse.data.totalGrantedAmount || 0);
+      } catch (err) {
+        setError("Failed to fetch data");
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [getCurrentUserToken]);
 
   useEffect(() => {
     const fetchCooperativeData = async () => {
@@ -55,8 +89,8 @@ const AdminPage = () => {
       <div className="w-full lg:w-2/3 flex flex-col gap-8">
         {/* USERCARDS */}
         <div className="flex gap-4 justify-between flex-wrap">
-          <UserCard type="Total Savings" value={totals.totalSavings} />
-          <UserCard type="Loans Approved" value={totals.totalLoansApproved} />
+        <UserCard type="Total Savings" value={totalSavings} />
+        <UserCard type="Loans Approved" value={totalLoansApproved} />
           <UserCard type="Approved Loans Count" value={totals.totalLoansApprovedCount} />
           <UserCard type="Total Members" value={totals.totalMembers} />
         </div>

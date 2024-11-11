@@ -10,6 +10,8 @@ import { auth } from "@/app/api/config";
 import { useRouter } from "next/navigation";
 import LoanRequestDetail from "./[id]/LoanRequestDetail";
 import { useAuth } from "@/context/AuthCOntext";
+import Image from "next/image";
+import LoanFormModal from "@/components/forms/LoanForm";
 
 interface LoanRequest {
   id: string;
@@ -48,6 +50,14 @@ interface LoanRequest {
     cooperativeName: string;
   };
 }
+interface LoanStats {
+  totalLoans: number;
+  approvedLoans: number;
+  rejectedLoans: number;
+  pendingLoans: number;
+  totalRequestedAmount: number;
+  totalGrantedAmount: number;
+}
 
 const LoanRequestsPage: React.FC = () => {
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
@@ -55,8 +65,7 @@ const LoanRequestsPage: React.FC = () => {
   const [filteredLoanRequests, setFilteredLoanRequests] = useState<LoanRequest[]>([]);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-  // const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Check if user is admin
+  const [loanStats, setLoanStats] = useState<LoanStats | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedLoan, setSelectedLoan] = useState<LoanRequest | null>(null);
   const [status, setStatus] = useState<string>("");
@@ -78,6 +87,7 @@ const LoanRequestsPage: React.FC = () => {
 
   const { role, cooperativeId, memberId } = useAuth();
   const isAuthenticated = role !== null;
+  const isAdmin = role === "cooperative-admin";
 
   useEffect(() => {
     console.log("Role:", role, "Cooperative ID:", cooperativeId, "Member ID:", memberId);
@@ -118,6 +128,35 @@ const LoanRequestsPage: React.FC = () => {
     }
   }, [role, cooperativeId, memberId]);
 
+  useEffect(() => {
+    const fetchLoanStats = async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        console.log('Fetched token:', token);
+  
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        console.log('Server URL:', serverURL);
+  
+        const response = await axios.get(`${serverURL}/loan-stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (response.status === 200) {
+          console.log('Loan Stats response:', response.data);
+          setLoanStats(response.data);
+        } else {
+          console.warn('Failed to fetch loan statistics, response status:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching loan statistics:', error);
+      }
+    };
+  
+    fetchLoanStats();
+  }, [role, cooperativeId, memberId]);
+  
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
@@ -211,19 +250,67 @@ const LoanRequestsPage: React.FC = () => {
 
   return (
     <div>
-     <h1 className="text-xl font-semibold">Requested Loans</h1>
+         <h1 className="text-xl font-semibold px-7">Requested Loans</h1>
+      <div className= 'flex justify-between px-7'>
       <TextField
         label="Search"
         variant="outlined"
         value={search}
         onChange={handleSearch}
-        style={{ marginBottom: "20px" }}
+        style={{ marginBottom: "20px" ,height:"1.5rem", borderRadius:'10%'}}
       />
       <CSVLink data={filteredLoanRequests} headers={headers} filename="loan-requests.csv">
         <Button variant="contained" color="primary" style={{ marginBottom: "20px" }}>
           Export CSV
         </Button>
       </CSVLink>
+      </div>
+      <div className="px-7 py-5">
+      <LoanFormModal />
+      </div>
+      <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
+      <div className="flex-1 flex gap-4 justify-between flex-wrap">
+            {/* CARD */}
+            <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
+          <div>
+            <h1 className="text-xl font-semibold">
+              {loanStats?.totalLoans ?? 0}
+            </h1>
+            <span className="text-sm text-gray-400">Total Loans Requested</span>
+          </div>
+        </div>
+
+        {/* Approved Loans Card */}
+        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
+          <div>
+            <h1 className="text-xl font-semibold">
+              {loanStats?.approvedLoans ?? 0}
+            </h1>
+            <span className="text-sm text-gray-400">Total Approved Loans</span>
+          </div>
+        </div>
+
+        {/* Total Requested Amount Card */}
+        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
+          <div>
+            <h1 className="text-xl font-semibold">
+              ₦{loanStats?.totalRequestedAmount.toLocaleString('en-NG') ?? 0}
+            </h1>
+            <span className="text-sm text-gray-400">Total Amount Requested</span>
+          </div>
+        </div>
+
+        {/* Total Granted Amount Card */}
+        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
+          <div>
+            <h1 className="text-xl font-semibold">
+              ₦{loanStats?.totalGrantedAmount.toLocaleString('en-NG') ?? 0}
+            </h1>
+            <span className="text-sm text-gray-400">Total Amount Granted</span>
+          </div>
+        </div>
+      </div>
+</div>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -234,86 +321,96 @@ const LoanRequestsPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredLoanRequests.length > 0 ? (
-              filteredLoanRequests.map((loanRequest) => (
-                <TableRow key={loanRequest.id}>
-                  <TableCell>
-                  {loanRequest.member.memberDetails.img ? (
-                    <Avatar
-                      src={loanRequest.member.memberDetails.img}
-                      alt="member-profile image"
-                      sx={{ width: 40, height: 40 }}
-                    />
-                  ) : (
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        bgcolor: '#9c27b0', // Purple background
-                        color: '#fff',
-                      }}
-                    >
-                      {getInitials(
-                        loanRequest.member.firstName,
-                        loanRequest.member.surname
-                      )}
-                    </Avatar>
-                  )}
-                    </TableCell>
-                  {/* <TableCell>{loanRequest.cooperative.cooperativeName}</TableCell> */}
-                  <TableCell>{loanRequest.member.email}</TableCell>
-                  <TableCell>{loanRequest.member.firstName}</TableCell>
-                  <TableCell>{loanRequest.member.surname}</TableCell>
-                  <TableCell>{loanRequest.amountRequired}</TableCell>
-                  <TableCell>{loanRequest.purposeOfLoan}</TableCell>
-                  <TableCell>{loanRequest.durationOfLoan}</TableCell>
-                  <TableCell>{loanRequest.bvn}</TableCell>
-                  <TableCell>{loanRequest.nameOfSurety1}</TableCell>
-                  <TableCell>{loanRequest.surety1MembersNo}</TableCell>
-                  <TableCell>{loanRequest.surety1telePhone}</TableCell>
-                  <TableCell>{loanRequest.nameOfSurety2}</TableCell>
-                  <TableCell>{loanRequest.surety2MembersNo}</TableCell>
-                  <TableCell>{loanRequest.surety2telePhone}</TableCell>
-                  <TableCell>{loanRequest.amountGranted}</TableCell>
-                  <TableCell>{loanRequest.loanInterest}</TableCell>
-                  <TableCell>{loanRequest.dateOfApplication}</TableCell>
-                  <TableCell>{loanRequest.expectedReimbursementDate}</TableCell>
+  {filteredLoanRequests.length > 0 ? (
+    filteredLoanRequests.map((loanRequest) => (
+      <TableRow
+        key={loanRequest.id}
+        style={{
+          backgroundColor: loanRequest.approved
+            ? "lightgreen"
+            : loanRequest.rejected
+            ? "lightcoral"
+            : "lightgoldenrodyellow",
+        }}
+      >
+        <TableCell>
+          {loanRequest.member.memberDetails.img ? (
+            <Avatar
+              src={loanRequest.member.memberDetails.img}
+              alt="member-profile image"
+              sx={{ width: 40, height: 40 }}
+            />
+          ) : (
+            <Avatar
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: "#9c27b0", // Purple background
+                color: "#fff",
+              }}
+            >
+              {getInitials(
+                loanRequest.member.firstName,
+                loanRequest.member.surname
+              )}
+            </Avatar>
+          )}
+        </TableCell>
+        <TableCell>{loanRequest.member.email}</TableCell>
+        <TableCell>{loanRequest.member.firstName}</TableCell>
+        <TableCell>{loanRequest.member.surname}</TableCell>
+        <TableCell>{loanRequest.amountRequired}</TableCell>
+        <TableCell>{loanRequest.purposeOfLoan}</TableCell>
+        <TableCell>{loanRequest.durationOfLoan}</TableCell>
+        <TableCell>{loanRequest.bvn}</TableCell>
+        <TableCell>{loanRequest.nameOfSurety1}</TableCell>
+        <TableCell>{loanRequest.surety1MembersNo}</TableCell>
+        <TableCell>{loanRequest.surety1telePhone}</TableCell>
+        <TableCell>{loanRequest.nameOfSurety2}</TableCell>
+        <TableCell>{loanRequest.surety2MembersNo}</TableCell>
+        <TableCell>{loanRequest.surety2telePhone}</TableCell>
+        <TableCell>{loanRequest.amountGranted}</TableCell>
+        <TableCell>{loanRequest.loanInterest}</TableCell>
+        <TableCell>{loanRequest.dateOfApplication}</TableCell>
+        <TableCell>{loanRequest.expectedReimbursementDate}</TableCell>
 
-                  {/* Status Button */}
-                  <TableCell>
-                    {isAdmin ? (
-                      <Button
-                      aria-hidden='false'
-                        variant="contained"
-                        color={loanRequest.approved ? "success" : loanRequest.rejected ? "error" : "warning"}
-                        onClick={(e) => handleStatusClick(e, loanRequest)}
-                      >
-                        {loanRequest.approved
-                          ? "Approved"
-                          : loanRequest.rejected
-                          ? "Rejected"
-                          : "Pending"}
-                      </Button>
-
-
-                    ) : (
-                      <span>{loanRequest.pending ? "Pending" : loanRequest.approved ? "Approved" : "Rejected"}</span>
-                    )}
-  <Button variant="contained" color="primary" onClick={() => handleOpenModal(loanRequest.id)}>
+        {/* Status Button */}
+        <TableCell>
+          {isAdmin ? (
+            <Button
+              aria-hidden="false"
+              variant="contained"
+              color={loanRequest.approved ? "success" : loanRequest.rejected ? "error" : "warning"}
+              onClick={(e) => handleStatusClick(e, loanRequest)}
+            >
+              {loanRequest.approved
+                ? "Approved"
+                : loanRequest.rejected
+                ? "Rejected"
+                : "Pending"}
+            </Button>
+          ) : (
+            <span>
+              {loanRequest.pending ? "Pending" : loanRequest.approved ? "Approved" : "Rejected"}
+            </span>
+          )}
+          {isAdmin && (
+            <Button variant="contained" color="primary" onClick={() => handleOpenModal(loanRequest.id)}>
               Review
             </Button>
-          </TableCell>
-        </TableRow>
+          )}
+        </TableCell>
+      </TableRow>
+    ))
+  ) : (
+    <TableRow>
+      <TableCell colSpan={headers.length} align="center">
+        No loan requests found.
+      </TableCell>
+    </TableRow>
+  )}
+</TableBody>
 
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={headers.length} align="center">
-                  No loan requests found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
         </Table>
       </TableContainer>
 

@@ -11,6 +11,7 @@ import axios from 'axios';
 import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
 import TransactionsTable from "../../../components/TransactionsTable";
+import LoanFormModal from "@/components/forms/LoanForm";
 
 interface Member {
   id: string;
@@ -296,12 +297,11 @@ const MemberSavingsPage = () => {
         </div>
       
         <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">WIthdrawals</h1>
+          <h1 className="text-xl font-semibold">Loans</h1>
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
             
             <div className="p-3 rounded-md bg-lamaYellowLight" >
-             Loans
-                  
+                  <LoanFormModal />
                    
             </div>
        

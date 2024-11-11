@@ -12,14 +12,15 @@ const menuItems = [
       { icon: "/home.png", label: "Home", href: "/", visible: ["super-admin", "admin", "member", "auditor", "cooperative-admin", "cooperative-auditor"] },
       { icon: "/attendance.png", label: "Cooperatives", href: "/list/cooperatives", visible: ["admin", "super-admin", "auditor"] },
       { icon: "/parent.png", label: "Members", href: "/list/users", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
-      { icon: "/teacher.png", label: "Request Loans", href: "/loanForm", visible: ["admin", "super-admin", "auditor", "member"] },
-      { icon: "/teacher.png", label: "Loans Requested", href: "/list/loansRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin", "member"] },
+      { icon: "/teacher.png", label: "Loans", href: "/list/loansRequested", visible: ["admin", "super-admin", "auditor", "member"] },
+      { icon: "/teacher.png", label: "Member Loans", href: "/list/loansRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
       { icon: "/teacher.png", label: "Loans Approved", href: "/list/loansApproved", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
       { icon: "/student.png", label: "Assets Requested", href: "/list/assetsRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
       { icon: "/student.png", label: "Assets Transferred", href: "/list/assetsTransfered", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
       { icon: "/subject.png", label: "Debtors", href: "/list/debtors", visible: ["admin", "super-admin", "cooperative-admin"] },
+      { icon: "/lesson.png", label: "My Transactions", href: "/Member-savings", visible: ["member"] },
       { icon: "/class.png", label: "Market Place", href: "/list/marketPlace", visible: ["admin", "member", "cooperative-admin"] },
-      { icon: "/lesson.png", label: "My Savings", href: "/Member-savings", visible: ["member"] },
+    
       { icon: "/lesson.png", label: "Member Savings", href: "/savings", visible: ["cooperative-admin"] },
       { icon: "/lesson.png", label: "Products Purchased", href: "/list/productPurchased", visible: ["member"] },
       { icon: "/assignment.png", label: "All Assets", href: "/list/allAssetsPage", visible: ["super-admin", "admin", "member"] },
@@ -61,8 +62,6 @@ const Menu = () => {
 
   return (
     <div className="mt-4 text-sm">
-      <p>Current role: {role}</p>
-      <p>KYC Completed: {kycCompleted ? "Yes" : "No"}</p>
       {menuItems.map((section) => (
         <div className="flex flex-col gap-2" key={section.title}>
           <span className="hidden lg:block text-gray-400 font-light my-4">{section.title}</span>

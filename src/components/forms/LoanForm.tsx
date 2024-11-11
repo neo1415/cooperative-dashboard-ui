@@ -5,6 +5,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import InputField from "../InputField";
+import { Modal, Box, Button } from "@mui/material";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthCOntext";
@@ -42,7 +43,10 @@ const schema = z.object({
 
 export type Inputs = z.infer<typeof schema>;
 
-const LoanForm = () => {
+const LoanFormModal = () => {
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
   const [loanInterest, setLoanInterest] = useState(10);
   const [amountGranted, setAmountGranted] = useState(0);
   const [amountInterestRate, setAmountInterestRate] = useState(loanInterest);
@@ -217,6 +221,26 @@ const LoanForm = () => {
   
 
   return (
+    <>
+ <Button variant="contained" color="primary" onClick={handleOpen}>
+        Open Loan Request Form
+      </Button>
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 600,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
    <form className="flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
       <h1 className="text-xl font-semibold">Loan Request</h1>
 
@@ -315,7 +339,12 @@ const LoanForm = () => {
         Submit Loan Request
       </button>
     </form>
+</Box>
+      </Modal>
+    </>
   );
 };
 
-export default LoanForm;
+export default LoanFormModal;
+
+

@@ -44,6 +44,7 @@ interface MemberDetails {
   residentialAddress: string
   occupation: string;
   img: string
+  dateOfBirth: string
 }
 
 export interface Transaction {
@@ -162,7 +163,7 @@ useEffect(() => {
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/date.png" alt="" width={14} height={14} />
-                  {memberData?.loansAppproved?.purposeOfLoan}
+                  {memberData?.memberDetails.dateOfBirth}
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/mail.png" alt="" width={14} height={14} />
@@ -251,7 +252,7 @@ useEffect(() => {
       </div>
       {/* RIGHT */}
       <div className="w-full xl:w-1/3 flex flex-col gap-4">
-        <div className="bg-white p-4 rounded-md">
+        {/* <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Savings</h1>
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
            
@@ -263,19 +264,9 @@ useEffect(() => {
         </div>
           </div>
         </div>
+       */}
+
       
-        <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">WIthdrawals</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            
-            <div className="p-3 rounded-md bg-lamaYellowLight" >
-             Withdrawal
-                    {/* <FlutterWaveButton {...fwConfig} /> */}
-                    Coming Soon
-            </div>
-       
-          </div>
-        </div>
         <Performance />
         {/* <Announcements /> */}
       </div>
