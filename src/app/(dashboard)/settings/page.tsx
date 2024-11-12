@@ -106,45 +106,152 @@ const LoanInterestSettings: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 sm:p-6 md:p-8">
       <h2 className="text-2xl font-semibold mb-4">Loan Interest Settings</h2>
-      <Button variant="contained" color="primary" onClick={() => setIsModalOpen(true)}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => setIsModalOpen(true)}
+        className="mb-4"
+      >
         Add New Setting
       </Button>
-
-      <CustomModal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Loan Interest Setting" confirmText="Save" onConfirm={handleAddSetting}>
-        <Typography variant="h6">Duration Settings</Typography>
-        <TextField label="Min Duration (Months)" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, minDurationMonths: +e.target.value })} />
-        <TextField label="Max Duration (Months)" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, maxDurationMonths: +e.target.value })} />
-        <TextField label="Duration Interest Rate (%)" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, durationInterestRate: +e.target.value })} />
-
-        <Typography variant="h6" className="mt-4">Amount Settings</Typography>
-        <TextField label="Min Amount" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, minAmount: +e.target.value })} />
-        <TextField label="Max Amount" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, maxAmount: +e.target.value })} />
-        <TextField label="Amount Interest Rate (%)" type="number" fullWidth margin="normal" onChange={(e) => setNewSetting({ ...newSetting, amountInterestRate: +e.target.value })} />
+  
+      {/* Add Setting Modal */}
+      <CustomModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add Loan Interest Setting"
+        confirmText="Save"
+        onConfirm={handleAddSetting}
+      >
+        <Typography variant="h6" className="mb-2">Duration Settings</Typography>
+        <TextField
+          label="Min Duration (Months)"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, minDurationMonths: +e.target.value })}
+        />
+        <TextField
+          label="Max Duration (Months)"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, maxDurationMonths: +e.target.value })}
+        />
+        <TextField
+          label="Duration Interest Rate (%)"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, durationInterestRate: +e.target.value })}
+        />
+  
+        <Typography variant="h6" className="mt-4 mb-2">Amount Settings</Typography>
+        <TextField
+          label="Min Amount"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, minAmount: +e.target.value })}
+        />
+        <TextField
+          label="Max Amount"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, maxAmount: +e.target.value })}
+        />
+        <TextField
+          label="Amount Interest Rate (%)"
+          type="number"
+          fullWidth
+          margin="normal"
+          onChange={(e) => setNewSetting({ ...newSetting, amountInterestRate: +e.target.value })}
+        />
       </CustomModal>
-
-      <CustomModal open={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm Deletion" confirmText="Delete" onConfirm={handleDeleteSetting}>
+  
+      {/* Delete Confirmation Modal */}
+      <CustomModal
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        title="Confirm Deletion"
+        confirmText="Delete"
+        onConfirm={handleDeleteSetting}
+      >
         <p>Are you sure you want to delete this setting?</p>
       </CustomModal>
-
-      <CustomModal open={!!editSetting} onClose={() => setEditSetting(null)} title="Edit Loan Interest Setting" confirmText="Update" onConfirm={handleEditSetting}>
-        <Typography variant="h6">Duration Settings</Typography>
-        <TextField label="Min Duration (Months)" type="number" fullWidth margin="normal" value={editSetting?.minDurationMonths ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, minDurationMonths: +e.target.value } : prev)} />
-        <TextField label="Max Duration (Months)" type="number" fullWidth margin="normal" value={editSetting?.maxDurationMonths ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, maxDurationMonths: +e.target.value } : prev)} />
-        <TextField label="Duration Interest Rate (%)" type="number" fullWidth margin="normal" value={editSetting?.durationInterestRate ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, durationInterestRate: +e.target.value } : prev)} />
-
-        <Typography variant="h6" className="mt-4">Amount Settings</Typography>
-        <TextField label="Min Amount" type="number" fullWidth margin="normal" value={editSetting?.minAmount ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, minAmount: +e.target.value } : prev)} />
-        <TextField label="Max Amount" type="number" fullWidth margin="normal" value={editSetting?.maxAmount ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, maxAmount: +e.target.value } : prev)} />
-        <TextField label="Amount Interest Rate (%)" type="number" fullWidth margin="normal" value={editSetting?.amountInterestRate ?? ''} onChange={(e) => setEditSetting((prev) => prev ? { ...prev, amountInterestRate: +e.target.value } : prev)} />
+  
+      {/* Edit Setting Modal */}
+      <CustomModal
+        open={!!editSetting}
+        onClose={() => setEditSetting(null)}
+        title="Edit Loan Interest Setting"
+        confirmText="Update"
+        onConfirm={handleEditSetting}
+      >
+        <Typography variant="h6" className="mb-2">Duration Settings</Typography>
+        <TextField
+          label="Min Duration (Months)"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.minDurationMonths ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, minDurationMonths: +e.target.value } : prev)}
+        />
+        <TextField
+          label="Max Duration (Months)"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.maxDurationMonths ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, maxDurationMonths: +e.target.value } : prev)}
+        />
+        <TextField
+          label="Duration Interest Rate (%)"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.durationInterestRate ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, durationInterestRate: +e.target.value } : prev)}
+        />
+  
+        <Typography variant="h6" className="mt-4 mb-2">Amount Settings</Typography>
+        <TextField
+          label="Min Amount"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.minAmount ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, minAmount: +e.target.value } : prev)}
+        />
+        <TextField
+          label="Max Amount"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.maxAmount ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, maxAmount: +e.target.value } : prev)}
+        />
+        <TextField
+          label="Amount Interest Rate (%)"
+          type="number"
+          fullWidth
+          margin="normal"
+          value={editSetting?.amountInterestRate ?? ''}
+          onChange={(e) => setEditSetting((prev) => prev ? { ...prev, amountInterestRate: +e.target.value } : prev)}
+        />
       </CustomModal>
-
-      <div className="bg-white rounded shadow p-4 mt-4">
-        <Typography variant="h6">Duration-Based Interest Settings</Typography>
+  
+      <div className="bg-white rounded shadow p-4 mt-6">
+        {/* Duration-Based Interest Settings */}
+        <Typography variant="h6" className="mb-3">Duration-Based Interest Settings</Typography>
         {settings.filter(s => s.minDurationMonths !== null).map((setting) => (
-          <div key={setting.id} className="flex items-center gap-4 border-b py-2">
-            <div>{`Duration: ${setting.minDurationMonths} - ${setting.maxDurationMonths} months, Interest: ${setting.durationInterestRate}%`}</div>
+          <div key={setting.id} className="flex flex-col sm:flex-row items-center gap-4 border-b py-2">
+            <div className="flex-1">
+              {`Duration: ${setting.minDurationMonths} - ${setting.maxDurationMonths} months, Interest: ${setting.durationInterestRate}%`}
+            </div>
             <IconButton onClick={() => setDeleteId(setting.id)} color="secondary">
               <DeleteIcon />
             </IconButton>
@@ -153,11 +260,14 @@ const LoanInterestSettings: React.FC = () => {
             </IconButton>
           </div>
         ))}
-
-        <Typography variant="h6" className="mt-4">Amount-Based Interest Settings</Typography>
+  
+        {/* Amount-Based Interest Settings */}
+        <Typography variant="h6" className="mt-6 mb-3">Amount-Based Interest Settings</Typography>
         {settings.filter(s => s.minAmount !== null).map((setting) => (
-          <div key={setting.id} className="flex items-center gap-4 border-b py-2">
-            <div>{`Amount: ${setting.minAmount} - ${setting.maxAmount}, Interest: ${setting.amountInterestRate}%`}</div>
+          <div key={setting.id} className="flex flex-col sm:flex-row items-center gap-4 border-b py-2">
+            <div className="flex-1">
+              {`Amount: ₦${setting.minAmount} - ₦${setting.maxAmount}, Interest: ${setting.amountInterestRate}%`}
+            </div>
             <IconButton onClick={() => setDeleteId(setting.id)} color="secondary">
               <DeleteIcon />
             </IconButton>
@@ -169,6 +279,7 @@ const LoanInterestSettings: React.FC = () => {
       </div>
     </div>
   );
+  
 };
 
 export default LoanInterestSettings;

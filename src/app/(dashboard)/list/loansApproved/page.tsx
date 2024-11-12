@@ -113,26 +113,36 @@ const LoanApprovedPage: React.FC = () => {
 
   // Render the loan requests table
   return (
-    <div>
-       <h1 className="text-xl font-semibold">Approved Loans</h1>
-      <TextField
-        label="Search"
-        variant="outlined"
-        value={search}
-        onChange={handleSearch}
-        style={{ marginBottom: "20px" }}
-      />
-      <CSVLink data={filteredLoanApproved} headers={headers} filename="loan-requests.csv">
-        <Button variant="contained" color="primary" style={{ marginBottom: "20px" }}>
-          Export CSV
-        </Button>
-      </CSVLink>
-      <TableContainer component={Paper}>
-        <Table>
+    <div className="px-4 md:px-8 lg:px-12">
+      <h1 className="text-lg md:text-xl lg:text-2xl font-semibold mb-4">Approved Loans</h1>
+      
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-4">
+        <TextField
+          label="Search"
+          variant="outlined"
+          value={search}
+          onChange={handleSearch}
+          className="w-full sm:w-auto"
+        />
+        <CSVLink
+          data={filteredLoanApproved}
+          headers={headers}
+          filename="loan-requests.csv"
+        >
+          <Button variant="contained" color="primary">
+            Export CSV
+          </Button>
+        </CSVLink>
+      </div>
+  
+      <TableContainer component={Paper} className="w-full overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHead>
             <TableRow>
               {headers.map((column) => (
-                <TableCell key={column.key}>{column.label}</TableCell>
+                <TableCell key={column.key} className="text-xs md:text-sm lg:text-base font-medium">
+                  {column.label}
+                </TableCell>
               ))}
             </TableRow>
           </TableHead>
@@ -140,29 +150,27 @@ const LoanApprovedPage: React.FC = () => {
             {filteredLoanApproved.length > 0 ? (
               filteredLoanApproved.map((loanApprove) => (
                 <TableRow key={loanApprove.id}>
-                                 <TableCell>
-                  {loanApprove.member.memberDetails.img ? (
-                    <Avatar
-                      src={loanApprove.member.memberDetails.img}
-                      alt="member-profile image"
-                      sx={{ width: 40, height: 40 }}
-                    />
-                  ) : (
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        bgcolor: '#9c27b0', // Purple background
-                        color: '#fff',
-                      }}
-                    >
-                      {getInitials(
-                        loanApprove.member.firstName,
-                        loanApprove.member.surname
-                      )}
-                    </Avatar>
-                  )}
-                    </TableCell>
+                  <TableCell>
+                    {loanApprove.member.memberDetails.img ? (
+                      <Avatar
+                        src={loanApprove.member.memberDetails.img}
+                        alt="member-profile image"
+                        sx={{ width: 32, height: 32, "@media (min-width: 768px)": { width: 40, height: 40 } }}
+                      />
+                    ) : (
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          bgcolor: '#9c27b0',
+                          color: '#fff',
+                          "@media (min-width: 768px)": { width: 40, height: 40 },
+                        }}
+                      >
+                        {getInitials(loanApprove.member.firstName, loanApprove.member.surname)}
+                      </Avatar>
+                    )}
+                  </TableCell>
                   <TableCell>{loanApprove.cooperative.cooperativeName}</TableCell>
                   <TableCell>{loanApprove.member.email}</TableCell>
                   <TableCell>{loanApprove.member.firstName}</TableCell>
@@ -185,7 +193,7 @@ const LoanApprovedPage: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={headers.length} align="center">
+                <TableCell colSpan={headers.length} align="center" className="text-sm md:text-base">
                   No loan requests found.
                 </TableCell>
               </TableRow>
@@ -195,6 +203,7 @@ const LoanApprovedPage: React.FC = () => {
       </TableContainer>
     </div>
   );
+  
 };
 
 export default LoanApprovedPage;

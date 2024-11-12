@@ -249,69 +249,59 @@ const LoanRequestsPage: React.FC = () => {
   }
 
   return (
-    <div>
-         <h1 className="text-xl font-semibold px-7">Requested Loans</h1>
-      <div className= 'flex justify-between px-7'>
-      <TextField
-        label="Search"
-        variant="outlined"
-        value={search}
-        onChange={handleSearch}
-        style={{ marginBottom: "20px" ,height:"1.5rem", borderRadius:'10%'}}
-      />
-      <CSVLink data={filteredLoanRequests} headers={headers} filename="loan-requests.csv">
-        <Button variant="contained" color="primary" style={{ marginBottom: "20px" }}>
-          Export CSV
-        </Button>
-      </CSVLink>
+    <div className="px-4 sm:px-6 lg:px-8">
+      <h1 className="text-xl font-semibold mb-4">Requested Loans</h1>
+  
+      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-6">
+        <TextField
+          label="Search"
+          variant="outlined"
+          value={search}
+          onChange={handleSearch}
+          className="w-full md:w-1/2 lg:w-1/3"
+        />
+        <CSVLink data={filteredLoanRequests} headers={headers} filename="loan-requests.csv">
+          <Button variant="contained" color="primary">
+            Export CSV
+          </Button>
+        </CSVLink>
       </div>
-      <div className="px-7 py-5">
-      <LoanFormModal />
+  
+      <div className="mb-6">
+        <LoanFormModal />
       </div>
-      <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
-      <div className="flex-1 flex gap-4 justify-between flex-wrap">
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
-          <div>
-            <h1 className="text-xl font-semibold">
-              {loanStats?.totalLoans ?? 0}
-            </h1>
-            <span className="text-sm text-gray-400">Total Loans Requested</span>
-          </div>
+  
+      <div className="flex flex-wrap gap-4">
+        {/* CARD */}
+        <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+          <h1 className="text-xl font-semibold">{loanStats?.totalLoans ?? 0}</h1>
+          <span className="text-sm text-gray-400">Total Loans Requested</span>
         </div>
-
+  
         {/* Approved Loans Card */}
-        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
-          <div>
-            <h1 className="text-xl font-semibold">
-              {loanStats?.approvedLoans ?? 0}
-            </h1>
-            <span className="text-sm text-gray-400">Total Approved Loans</span>
-          </div>
+        <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+          <h1 className="text-xl font-semibold">{loanStats?.approvedLoans ?? 0}</h1>
+          <span className="text-sm text-gray-400">Total Approved Loans</span>
         </div>
-
+  
         {/* Total Requested Amount Card */}
-        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
-          <div>
-            <h1 className="text-xl font-semibold">
-              ₦{loanStats?.totalRequestedAmount.toLocaleString('en-NG') ?? 0}
-            </h1>
-            <span className="text-sm text-gray-400">Total Amount Requested</span>
-          </div>
+        <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+          <h1 className="text-xl font-semibold">
+            ₦{loanStats?.totalRequestedAmount.toLocaleString('en-NG') ?? 0}
+          </h1>
+          <span className="text-sm text-gray-400">Total Amount Requested</span>
         </div>
-
+  
         {/* Total Granted Amount Card */}
-        <div className="bg-white p-4 rounded-md flex gap-4 w-[45%] md:w-[48%] lg:w-[23%]">
-          <div>
-            <h1 className="text-xl font-semibold">
-              ₦{loanStats?.totalGrantedAmount.toLocaleString('en-NG') ?? 0}
-            </h1>
-            <span className="text-sm text-gray-400">Total Amount Granted</span>
-          </div>
+        <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+          <h1 className="text-xl font-semibold">
+            ₦{loanStats?.totalGrantedAmount.toLocaleString('en-NG') ?? 0}
+          </h1>
+          <span className="text-sm text-gray-400">Total Amount Granted</span>
         </div>
       </div>
-</div>
-      <TableContainer component={Paper}>
+  
+      <TableContainer component={Paper} className="mt-8 overflow-x-auto">
         <Table>
           <TableHead>
             <TableRow>
@@ -321,99 +311,112 @@ const LoanRequestsPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-  {filteredLoanRequests.length > 0 ? (
-    filteredLoanRequests.map((loanRequest) => (
-      <TableRow
-        key={loanRequest.id}
-        style={{
-          backgroundColor: loanRequest.approved
-            ? "lightgreen"
-            : loanRequest.rejected
-            ? "lightcoral"
-            : "lightgoldenrodyellow",
-        }}
-      >
-        <TableCell>
-          {loanRequest.member.memberDetails.img ? (
-            <Avatar
-              src={loanRequest.member.memberDetails.img}
-              alt="member-profile image"
-              sx={{ width: 40, height: 40 }}
-            />
-          ) : (
-            <Avatar
-              sx={{
-                width: 40,
-                height: 40,
-                bgcolor: "#9c27b0", // Purple background
-                color: "#fff",
-              }}
-            >
-              {getInitials(
-                loanRequest.member.firstName,
-                loanRequest.member.surname
-              )}
-            </Avatar>
-          )}
-        </TableCell>
-        <TableCell>{loanRequest.member.email}</TableCell>
-        <TableCell>{loanRequest.member.firstName}</TableCell>
-        <TableCell>{loanRequest.member.surname}</TableCell>
-        <TableCell>{loanRequest.amountRequired}</TableCell>
-        <TableCell>{loanRequest.purposeOfLoan}</TableCell>
-        <TableCell>{loanRequest.durationOfLoan}</TableCell>
-        <TableCell>{loanRequest.bvn}</TableCell>
-        <TableCell>{loanRequest.nameOfSurety1}</TableCell>
-        <TableCell>{loanRequest.surety1MembersNo}</TableCell>
-        <TableCell>{loanRequest.surety1telePhone}</TableCell>
-        <TableCell>{loanRequest.nameOfSurety2}</TableCell>
-        <TableCell>{loanRequest.surety2MembersNo}</TableCell>
-        <TableCell>{loanRequest.surety2telePhone}</TableCell>
-        <TableCell>{loanRequest.amountGranted}</TableCell>
-        <TableCell>{loanRequest.loanInterest}</TableCell>
-        <TableCell>{loanRequest.dateOfApplication}</TableCell>
-        <TableCell>{loanRequest.expectedReimbursementDate}</TableCell>
-
-        {/* Status Button */}
-        <TableCell>
-          {isAdmin ? (
-            <Button
-              aria-hidden="false"
-              variant="contained"
-              color={loanRequest.approved ? "success" : loanRequest.rejected ? "error" : "warning"}
-              onClick={(e) => handleStatusClick(e, loanRequest)}
-            >
-              {loanRequest.approved
-                ? "Approved"
-                : loanRequest.rejected
-                ? "Rejected"
-                : "Pending"}
-            </Button>
-          ) : (
-            <span>
-              {loanRequest.pending ? "Pending" : loanRequest.approved ? "Approved" : "Rejected"}
-            </span>
-          )}
-          {isAdmin && (
-            <Button variant="contained" color="primary" onClick={() => handleOpenModal(loanRequest.id)}>
-              Review
-            </Button>
-          )}
-        </TableCell>
-      </TableRow>
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={headers.length} align="center">
-        No loan requests found.
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
-
+            {filteredLoanRequests.length > 0 ? (
+              filteredLoanRequests.map((loanRequest) => (
+                <TableRow
+                  key={loanRequest.id}
+                  className="bg-opacity-70"
+                  style={{
+                    backgroundColor: loanRequest.approved
+                      ? "lightgreen"
+                      : loanRequest.rejected
+                      ? "lightcoral"
+                      : "lightgoldenrodyellow",
+                  }}
+                >
+                  <TableCell>
+                    {loanRequest.member.memberDetails.img ? (
+                      <Avatar
+                        src={loanRequest.member.memberDetails.img}
+                        alt="member-profile image"
+                        sx={{ width: 40, height: 40 }}
+                      />
+                    ) : (
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "#9c27b0",
+                          color: "#fff",
+                        }}
+                      >
+                        {getInitials(
+                          loanRequest.member.firstName,
+                          loanRequest.member.surname
+                        )}
+                      </Avatar>
+                    )}
+                  </TableCell>
+                  <TableCell>{loanRequest.member.email}</TableCell>
+                  <TableCell>{loanRequest.member.firstName}</TableCell>
+                  <TableCell>{loanRequest.member.surname}</TableCell>
+                  <TableCell>{loanRequest.amountRequired}</TableCell>
+                  <TableCell>{loanRequest.purposeOfLoan}</TableCell>
+                  <TableCell>{loanRequest.durationOfLoan}</TableCell>
+                  <TableCell>{loanRequest.bvn}</TableCell>
+                  <TableCell>{loanRequest.nameOfSurety1}</TableCell>
+                  <TableCell>{loanRequest.surety1MembersNo}</TableCell>
+                  <TableCell>{loanRequest.surety1telePhone}</TableCell>
+                  <TableCell>{loanRequest.nameOfSurety2}</TableCell>
+                  <TableCell>{loanRequest.surety2MembersNo}</TableCell>
+                  <TableCell>{loanRequest.surety2telePhone}</TableCell>
+                  <TableCell>{loanRequest.amountGranted}</TableCell>
+                  <TableCell>{loanRequest.loanInterest}</TableCell>
+                  <TableCell>{loanRequest.dateOfApplication}</TableCell>
+                  <TableCell>{loanRequest.expectedReimbursementDate}</TableCell>
+  
+                  {/* Status Button */}
+                  <TableCell>
+                    {isAdmin ? (
+                      <Button
+                        variant="contained"
+                        color={
+                          loanRequest.approved
+                            ? "success"
+                            : loanRequest.rejected
+                            ? "error"
+                            : "warning"
+                        }
+                        onClick={(e) => handleStatusClick(e, loanRequest)}
+                      >
+                        {loanRequest.approved
+                          ? "Approved"
+                          : loanRequest.rejected
+                          ? "Rejected"
+                          : "Pending"}
+                      </Button>
+                    ) : (
+                      <span>
+                        {loanRequest.pending
+                          ? "Pending"
+                          : loanRequest.approved
+                          ? "Approved"
+                          : "Rejected"}
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleOpenModal(loanRequest.id)}
+                      >
+                        Review
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={headers.length} align="center">
+                  No loan requests found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </TableContainer>
-
+  
       {/* Dropdown Menu for Status Change */}
       <Menu
         anchorEl={anchorEl}
@@ -424,13 +427,13 @@ const LoanRequestsPage: React.FC = () => {
         <MenuItem onClick={() => handleStatusSelect("approved")}>Approved</MenuItem>
         <MenuItem onClick={() => handleStatusSelect("rejected")}>Rejected</MenuItem>
       </Menu>
-
+  
       <Dialog open={!!selectedLoanId} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogContent>
           {selectedLoanId && <LoanRequestDetail loanId={selectedLoanId} onClose={handleCloseModal} />}
         </DialogContent>
       </Dialog>
-      {/* Confirmation Modal */}
+  
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Confirm Status Change</DialogTitle>
         <DialogContent>
@@ -447,6 +450,6 @@ const LoanRequestsPage: React.FC = () => {
       </Dialog>
     </div>
   );
-};
+  };
 
 export default LoanRequestsPage;

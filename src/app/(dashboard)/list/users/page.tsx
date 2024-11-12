@@ -160,6 +160,7 @@ const MembersListPage: React.FC = () => {
 
   return (
     <div>
+      {/* Search Field */}
       <TextField
         label="Search"
         variant="outlined"
@@ -167,11 +168,15 @@ const MembersListPage: React.FC = () => {
         onChange={handleSearch}
         style={{ marginBottom: '20px' }}
       />
+  
+      {/* CSV Export Button */}
       <CSVLink data={filteredMembers} headers={headers} filename="members.csv">
         <Button variant="contained" color="primary" style={{ marginBottom: '20px' }}>
           Export CSV
         </Button>
       </CSVLink>
+  
+      {/* Table Display */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -182,81 +187,74 @@ const MembersListPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-  {Array.isArray(filteredMembers) && filteredMembers.length > 0 ? (
-    filteredMembers.map((member) => (
-      
-      <TableRow key={member.id}>
-        {/* Basic Member fields */}
-        <TableCell>{member.email}</TableCell>
-        <TableCell>{member.surname}</TableCell>
-        <TableCell>{member.firstName}</TableCell>
-
-        {/* MemberDetails fields */}
-        {member.memberDetails ? (
-          <>
-        
-            <TableCell>{member.memberDetails.middleName || 'N/A'}</TableCell>
-            <TableCell>
-          {member.memberDetails.img ? (
-                    <Avatar
-                      src={member.memberDetails.img}
-                      alt="member-profile image"
-                      sx={{ width: 40, height: 40 }}
-                    />
+            {Array.isArray(filteredMembers) && filteredMembers.length > 0 ? (
+              filteredMembers.map((member) => (
+                <TableRow key={member.id}>
+                  {/* Basic Member Fields */}
+                  <TableCell>{member.email}</TableCell>
+                  <TableCell>{member.surname}</TableCell>
+                  <TableCell>{member.firstName}</TableCell>
+  
+                  {/* MemberDetails Fields */}
+                  {member.memberDetails ? (
+                    <>
+                      <TableCell>{member.memberDetails.middleName || 'N/A'}</TableCell>
+                      <TableCell>
+                        {member.memberDetails.img ? (
+                          <Avatar
+                            src={member.memberDetails.img}
+                            alt="Member Profile"
+                            sx={{ width: 40, height: 40 }}
+                          />
+                        ) : (
+                          <Avatar
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: '#9c27b0',
+                              color: '#fff',
+                            }}
+                          >
+                            {getInitials(member.firstName, member.surname)}
+                          </Avatar>
+                        )}
+                      </TableCell>
+                      <TableCell>{member.memberDetails.telephone1 || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.telephone2 || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.sex || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.maritalStatus || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.occupation || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.business || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.residentialAddress || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.lga || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.state || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.permanentHomeAddress || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.stateOfOrigin || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.lga2 || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.amountPaid || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.nextOfKinName || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.nextOfKinPhone || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.nextOfKinPhone2 || 'N/A'}</TableCell>
+                      <TableCell>{member.memberDetails.sponsor || 'N/A'}</TableCell>
+                    </>
                   ) : (
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        bgcolor: '#9c27b0', // Purple background
-                        color: '#fff',
-                      }}
-                    >
-                      {getInitials(
-                        member.firstName,
-                        member.surname
-                      )}
-                    </Avatar>
+                    <TableCell colSpan={headers.length}>No additional details</TableCell>
                   )}
-
-          </TableCell>
-            <TableCell>{member.memberDetails.telephone1 || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.telephone2 || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.sex || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.maritalStatus || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.occupation || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.business || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.residentialAddress || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.lga || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.state || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.permanentHomeAddress || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.stateOfOrigin || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.lga2 || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.amountPaid || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.nextOfKinName || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.nextOfKinPhone || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.nextOfKinPhone2 || 'N/A'}</TableCell>
-            <TableCell>{member.memberDetails.sponsor || 'N/A'}</TableCell>
-          </>
-        ) : (
-          <TableCell colSpan={headers.length}>No additional details</TableCell>
-        )}
-      </TableRow>
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={headers.length} align="center">
-        No members found.
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
-
-
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={headers.length} align="center">
+                  No members found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </TableContainer>
     </div>
   );
+  ;
 };
 
 export default MembersListPage;

@@ -30,11 +30,11 @@ const AdminPage = () => {
           return;
         }
 
-        // Fetch data from /single-transaction
-        const transactionResponse = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/single-transaction`, {
+        // Fetch total savings for all members
+        const savingsResponse = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/total-savings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setTotalSavings(transactionResponse.data.savingsBalance);
+        setTotalSavings(savingsResponse.data.totalSavings || 0);
 
         // Fetch data from /loan-stats
         const loanStatsResponse = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/loan-stats`, {
@@ -51,7 +51,6 @@ const AdminPage = () => {
 
     fetchData();
   }, [getCurrentUserToken]);
-
   useEffect(() => {
     const fetchCooperativeData = async () => {
       try {
@@ -84,40 +83,42 @@ const AdminPage = () => {
   const { totals } = cooperativeData;
 
   return (
-    <div className="p-4 flex gap-4 flex-col md:flex-row">
-      {/* LEFT */}
-      <div className="w-full lg:w-2/3 flex flex-col gap-8">
-        {/* USERCARDS */}
-        <div className="flex gap-4 justify-between flex-wrap">
-        <UserCard type="Total Savings" value={totalSavings} />
-        <UserCard type="Loans Approved" value={totalLoansApproved} />
+    <div className="p-4 flex flex-col gap-4 lg:gap-8 md:flex-row">
+      {/* LEFT SECTION */}
+      <div className="w-full lg:w-2/3 flex flex-col gap-6">
+        
+        {/* USER CARDS */}
+        <div className="flex flex-wrap gap-4 justify-between">
+          <UserCard type="Total Savings" value={totalSavings} />
+          <UserCard type="Loans Approved" value={totalLoansApproved} />
           <UserCard type="Approved Loans Count" value={totals.totalLoansApprovedCount} />
           <UserCard type="Total Members" value={totals.totalMembers} />
         </div>
         
         {/* MIDDLE CHARTS */}
-        <div className="flex gap-4 flex-col lg:flex-row">
-          <div className="w-full lg:w-1/3 h-[450px]">
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="w-full lg:w-1/3 h-[300px] md:h-[400px] xl:h-[450px]">
             <CountChart totalSavingsCount={totals.totalSavingsCount} totalLoansApproved={totals.totalLoansApprovedCount} />
           </div>
-          <div className="w-full lg:w-2/3 h-[450px]">
+          <div className="w-full lg:w-2/3 h-[300px] md:h-[400px] xl:h-[450px]">
             <AssetChart totalSavingsCount={totals.totalSavingsCount} totalLoansApproved={totals.totalLoansApprovedCount} />
           </div>
         </div>
         
-        {/* BOTTOM CHARTS */}
-        <div className="w-full h-[500px]">
+        {/* BOTTOM CHART */}
+        <div className="w-full h-[350px] md:h-[400px] xl:h-[500px]">
           <FinanceChart />
         </div>
       </div>
       
-      {/* RIGHT */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-8">
+      {/* RIGHT SECTION */}
+      <div className="w-full lg:w-1/3 flex flex-col gap-6">
         <EventCalender />
         <Announcements />
       </div>
     </div>
   );
+  
 };
 
 export default AdminPage;

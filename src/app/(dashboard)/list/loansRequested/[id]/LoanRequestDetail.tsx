@@ -34,7 +34,7 @@ interface LoanRequest {
   durationOfLoan: number;
   dateOfApplication: string;
   expectedReimbursementDate: string;
-  interestRate: number;
+  loanInterest: number;
   grandTotal: number;
   lastSavings: number;
   savingsFrequency: number;
@@ -195,60 +195,68 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
   if (!loanRequest) return <p>Loan request not found or failed to load.</p>;
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h2 className="text-xl font-bold mb-4">Loan Request Details</h2>
-      <div className="bg-white p-4 rounded shadow-md">
-        <div className="mb-2">
+    <div className="p-6 bg-gray-100 min-h-screen flex flex-col items-center">
+      <h2 className="text-2xl font-bold mb-6 text-center">Loan Request Details</h2>
+      
+      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md sm:max-w-lg">
+        <div className="mb-4">
           <strong>Name:</strong> {loanRequest.member?.firstName ?? 'N/A'} {loanRequest.member?.surname ?? 'N/A'}
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Email:</strong> {loanRequest.member?.email ?? 'N/A'}
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Loan Amount Requested:</strong>
           <input
             type="number"
             value={editableAmount}
             onChange={(e) => setEditableAmount(Number(e.target.value))}
-            className="border p-1 ml-2"
+            className="border p-2 ml-2 rounded w-full mt-1"
           />
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Purpose of Loan:</strong> {loanRequest.purposeOfLoan}
         </div>
-        <div className="mb-2">
-          <strong>Interest Rate:</strong> {loanRequest.interestRate}%
+        <div className="mb-4">
+          <strong>Interest Rate:</strong> {loanRequest.loanInterest}%
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Expected Reimbursement Date:</strong> {new Date(loanRequest.expectedReimbursementDate).toLocaleDateString()}
         </div>
-
-        <h3 className="text-lg font-bold mt-4 mb-2">Savings Details</h3>
-        <div className="mb-2">
+  
+        <h3 className="text-xl font-semibold mt-6 mb-4">Savings Details</h3>
+        <div className="mb-4">
           <strong>Grand Total Savings:</strong> {loanRequest.grandTotal}
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Last Savings Balance:</strong> {loanRequest.lastSavings}
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <strong>Savings Frequency:</strong> {loanRequest.savingsFrequency} deposits
         </div>
-
-        <button onClick={handleStatusClick} className="mt-4 bg-green-500 text-white py-1 px-4 rounded">
-          Change Loan Status
-        </button>
-
-        <button onClick={handleAmountChange} className="mt-4 bg-blue-500 text-white py-1 px-4 rounded">
-          Update Loan Amount
-        </button>
+  
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <button
+            onClick={handleStatusClick}
+            className="bg-green-600 text-white py-2 px-4 rounded w-full sm:w-auto"
+          >
+            Change Loan Status
+          </button>
+          <button
+            onClick={handleAmountChange}
+            className="bg-blue-600 text-white py-2 px-4 rounded w-full sm:w-auto"
+          >
+            Update Loan Amount
+          </button>
+        </div>
       </div>
-
+  
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => handleStatusSelect('pending')}>Pending</MenuItem>
         <MenuItem onClick={() => handleStatusSelect('approved')}>Approved</MenuItem>
         <MenuItem onClick={() => handleStatusSelect('rejected')}>Rejected</MenuItem>
       </Menu>
-
+  
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Confirm Status Change</DialogTitle>
         <DialogContent>Are you sure you want to set the status to `{status}`?</DialogContent>
@@ -263,6 +271,7 @@ const LoanRequestDetail: React.FC<LoanRequestDetailProps> = ({ loanId, onClose }
       </Dialog>
     </div>
   );
+  
 };
 
 export default LoanRequestDetail;

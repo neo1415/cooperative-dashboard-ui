@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthCOntext";
 import { auth } from "@/app/api/config";
+import CircularProgress from '@mui/material/CircularProgress';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
 
 interface Range {
@@ -49,6 +50,7 @@ const LoanFormModal = () => {
   const handleClose = () => setOpen(false);
   const [loanInterest, setLoanInterest] = useState(10);
   const [amountGranted, setAmountGranted] = useState(0);
+  const [expectedAmountToBePaidBack, setExpectedAmountToBePaidBack] = useState<number>(0);
   const [amountInterestRate, setAmountInterestRate] = useState(loanInterest);
   const [durationInterestRate, setDurationInterestRate] = useState(loanInterest);
   const [expectedReimbursementDate, setExpectedReimbursementDate] = useState("");
@@ -165,6 +167,7 @@ const LoanFormModal = () => {
     }
   }, [amountRequired, durationOfLoan, amountRanges, durationRanges, loanInterest]);
 
+
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     console.log('cooperativeId:', cooperativeId);
     console.log('memberId:', memberId);
@@ -174,7 +177,8 @@ const LoanFormModal = () => {
       return;
     }
   
-    // Prepare the payload with necessary fields only
+    setSubmitting(true);  // Start loading state
+  
     const payload = {
       cooperativeId,
       memberId,
@@ -188,9 +192,12 @@ const LoanFormModal = () => {
       nameOfSurety2: data.nameOfSurety2,
       surety2MembersNo: data.surety2MembersNo,
       surety2telePhone: data.surety2telePhone,
+      amountGranted: Math.round(amountGranted),
+      loanInterest,
+      expectedAmountToBePaidBack: Math.round(expectedAmountToBePaidBack)
     };
   
-    console.log('Payload:', payload); // Debug log for payload
+    console.log('Payload:', payload);
   
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
   
@@ -214,15 +221,18 @@ const LoanFormModal = () => {
     } catch (error: any) {
       console.error('Error submitting form:', error);
       setSubmitError(error.response?.data?.error || error.message || 'Error connecting to the server.');
+    } finally {
+      setSubmitting(false); // End loading state
     }
   };
   
+  const [submitting, setSubmitting] = useState(false);
 
   
 
   return (
     <>
- <Button variant="contained" color="primary" onClick={handleOpen}>
+      <Button variant="contained" color="primary" onClick={handleOpen}>
         Open Loan Request Form
       </Button>
       <Modal open={open} onClose={handleClose}>
@@ -232,7 +242,8 @@ const LoanFormModal = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 600,
+            width: "90%", // Adjusted for responsiveness
+            maxWidth: 600, // Maximum width for larger screens
             bgcolor: "background.paper",
             boxShadow: 24,
             p: 4,
@@ -241,108 +252,121 @@ const LoanFormModal = () => {
             overflowY: "auto",
           }}
         >
-   <form className="flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
-      <h1 className="text-xl font-semibold">Loan Request</h1>
+          <form className="flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
+            <h1 className="text-xl font-semibold">Loan Request</h1>
+  
+            {/* Loan Details Section */}
+            <span className="text-xs text-gray-400 font-medium">Loan Details</span>
+            <div className="flex flex-wrap gap-4">
+              <InputField
+                label="Amount Required"
+                name="amountRequired"
+                register={register}
+                error={errors?.amountRequired}
+              />
+              <InputField
+                label="Purpose of Loan"
+                name="purposeOfLoan"
+                register={register}
+                error={errors?.purposeOfLoan}
+              />
+              <InputField
+                label="Duration of Loan (months)"
+                name="durationOfLoan"
+                register={register}
+                error={errors?.durationOfLoan}
+                type="number"
+              />
+            </div>
+  
+            {/* Calculated Fields Display */}
+            {amountRequired && durationOfLoan && (
+              <div className="flex flex-wrap gap-4 mt-4">
+                <div className="bg-gray-100 p-4 rounded shadow flex-1">
+                  <label className="font-medium">Total Amount to Be Paid Back:</label>
+                  <div>{amountGranted.toFixed(2)}</div>
+                </div>
+                <div className="bg-gray-100 p-4 rounded shadow flex-1">
+                  <label className="font-medium">Loan Interest Rate (%):</label>
+                  <div>{loanInterest.toFixed(2)}</div>
+                </div>
+                <div className="bg-gray-100 p-4 rounded shadow flex-1">
+                  <label className="font-medium">Expected Reimbursement Date:</label>
+                  <div>{expectedReimbursementDate}</div>
+                </div>
+              </div>
+            )}
+  
+            {/* Surety Information */}
+            <span className="text-xs text-gray-400 font-medium">Surety Information</span>
+            <div className="flex flex-wrap gap-4">
+              <InputField
+                label="BVN"
+                name="bvn"
+                register={register}
+                error={errors?.bvn}
+              />
+              <InputField
+                label="Surety 1 Name"
+                name="nameOfSurety1"
+                register={register}
+                error={errors?.nameOfSurety1}
+              />
+              <InputField
+                label="Surety 1 Member Number"
+                name="surety1MembersNo"
+                register={register}
+                error={errors?.surety1MembersNo}
+              />
+              <InputField
+                label="Surety 1 Phone"
+                name="surety1telePhone"
+                register={register}
+                error={errors?.surety1telePhone}
+              />
+              <InputField
+                label="Surety 2 Name"
+                name="nameOfSurety2"
+                register={register}
+                error={errors?.nameOfSurety2}
+              />
+              <InputField
+                label="Surety 2 Member Number"
+                name="surety2MembersNo"
+                register={register}
+                error={errors?.surety2MembersNo}
+              />
+              <InputField
+                label="Surety 2 Phone"
+                name="surety2telePhone"
+                register={register}
+                error={errors?.surety2telePhone}
+              />
+            </div>
+  
+            {submitError && <span className="text-red-500">{submitError}</span>}
+  
+            <button
+    type="submit"
+    disabled={submitting}
+    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition flex items-center justify-center"
+  >
+    {submitting ? (
+      <>
+        <CircularProgress size={20} style={{ color: 'white', marginRight: '8px' }} />
+        Submitting Loan Request...
+      </>
+    ) : (
+      "Submit Loan Request"
+    )}
+  </button>
 
-      {/* Loan Details Section */}
-      <span className="text-xs text-gray-400 font-medium">Loan Details</span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Amount Required"
-          name="amountRequired"
-          register={register}
-          error={errors?.amountRequired}
-        />
-        <InputField
-          label="Purpose of Loan"
-          name="purposeOfLoan"
-          register={register}
-          error={errors?.purposeOfLoan}
-        />
-        <InputField
-          label="Duration of Loan (months)"
-          name="durationOfLoan"
-          register={register}
-          error={errors?.durationOfLoan}
-          type="number"
-        />
-      </div>
-
-      {/* Calculated Fields Display */}
-      {amountRequired && durationOfLoan && (
-        <div className="flex flex-wrap gap-4 mt-4">
-          <div className="bg-gray-100 p-4 rounded shadow">
-            <label className="font-medium">Total Amount to Be Paid Back:</label>
-            <div>{amountGranted.toFixed(2)}</div>
-          </div>
-          <div className="bg-gray-100 p-4 rounded shadow">
-            <label className="font-medium">Loan Interest Rate (%):</label>
-            <div>{loanInterest.toFixed(2)}</div>
-          </div>
-          <div className="bg-gray-100 p-4 rounded shadow">
-            <label className="font-medium">Expected Reimbursement Date:</label>
-            <div>{expectedReimbursementDate}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Surety Information */}
-      <span className="text-xs text-gray-400 font-medium">Surety Information</span>
-      <div className="flex justify-between flex-wrap gap-4">
-      <InputField
-          label="BVN"
-          name="bvn"
-          register={register}
-          error={errors?.bvn}
-        />
-        
-        <InputField
-          label="Surety 1 Name"
-          name="nameOfSurety1"
-          register={register}
-          error={errors?.nameOfSurety1}
-        />
-        <InputField
-          label="Surety 1 Member Number"
-          name="surety1MembersNo"
-          register={register}
-          error={errors?.surety1MembersNo}
-        />
-        <InputField
-          label="Surety 1 Phone"
-          name="surety1telePhone"
-          register={register}
-          error={errors?.surety1telePhone}
-        />
-        <InputField
-          label="Surety 2 Name"
-          name="nameOfSurety2"
-          register={register}
-          error={errors?.nameOfSurety2}
-        />
-        <InputField
-          label="Surety 2 Member Number"
-          name="surety2MembersNo"
-          register={register}
-          error={errors?.surety2MembersNo}
-        />
-        <InputField
-          label="Surety 2 Phone"
-          name="surety2telePhone"
-          register={register}
-          error={errors?.surety2telePhone}
-        />
-      </div>
-      {submitError && <span className="text-red-500">{submitError}</span>}
-
-      <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">
-        Submit Loan Request
-      </button>
-    </form>
-</Box>
+          </form>
+        </Box>
       </Modal>
     </>
   );
+  
 };
 
 export default LoanFormModal;

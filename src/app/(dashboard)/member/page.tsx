@@ -102,6 +102,15 @@ useEffect(() => {
   fetchTransaction();
 }, []);
 
+// utils/dateUtils.ts
+
+function formatDateToDDMMYYYY(dateString: string): string {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // If date is invalid, return original
+
+  return new Intl.DateTimeFormat('en-GB').format(date); // 'en-GB' formats as dd/mm/yyyy
+}
+
 
   useEffect(() => {
     const fetchMemberData = async () => {
@@ -162,9 +171,9 @@ useEffect(() => {
                   <span>{memberData?.memberDetails?.occupation}</span>
                 </div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/date.png" alt="" width={14} height={14} />
-                  {memberData?.memberDetails.dateOfBirth}
-                </div>
+  <Image src="/date.png" alt="" width={14} height={14} />
+  {memberData?.memberDetails?.dateOfBirth ? formatDateToDDMMYYYY(memberData.memberDetails.dateOfBirth) : "N/A"}
+</div>
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <Image src="/mail.png" alt="" width={14} height={14} />
                   <span>{memberData?.email}</span>
@@ -246,7 +255,7 @@ useEffect(() => {
         </div>
         {/* BOTTOM */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Savings & WIthdrawals</h1>
+          <h1>Savings & Loans</h1>
           <TransactionsTable />
         </div>
       </div>

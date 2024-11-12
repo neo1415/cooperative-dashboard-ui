@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthCOntext";
+import CircularProgress from '@mui/material/CircularProgress';
 import { auth } from "@/app/api/config";
 
 const KYCForm = () => {
@@ -30,48 +31,45 @@ const KYCForm = () => {
       setSubmitError("Error: Member ID not found. Please log in again.");
       return;
     }
-
+  
+    setSubmitting(true);  // Start loading state
     const formData = new FormData();
     formData.append("memberId", memberId);
-    
+  
     // Log data to be sent
     console.log("Form Data (before appending):", data);
-
+  
     Object.keys(data).forEach((key) => {
       const value = data[key as keyof MemberSchema];
       if (value !== undefined) {
         formData.append(key, value.toString());
       }
     });
-
+  
     if (imgFile) {
       formData.append("img", imgFile);
     }
-
-    // Log FormData contents
-    // for (let [key, value] of formData.entries()) {
-    //   console.log(`FormData key: ${key}, value: ${value}`);
-    // }
-
+  
     const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
-
+  
     try {
       const token = await getCurrentUserToken();
       if (!token) {
         setSubmitError("User not authenticated. Please log in again.");
+        setSubmitting(false);
         return;
       }
-
+  
       // Log token being sent
       console.log("Authorization Token:", token);
-
+  
       const response = await axios.post(`${serverURL}/member-kyc`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (response.status === 200) {
         router.push("/");
       } else {
@@ -80,8 +78,12 @@ const KYCForm = () => {
     } catch (error: any) {
       console.error("Error submitting form:", error);
       setSubmitError(error.response?.data?.error || "Error connecting to the server.");
+    } finally {
+      setSubmitting(false); // End loading state
     }
   });
+  
+  const [submitting, setSubmitting] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -90,61 +92,109 @@ const KYCForm = () => {
   };
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">Let us Know More About You</h1>
-      <span className="text-xs text-gray-400 font-medium">Personal Information</span>
-
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField label="Middle Name" name="middleName" register={register} error={errors?.middleName} />
-        <InputField label="Date of Entry" name="dateOfEntry" register={register} error={errors?.dateOfEntry} type="date" />
+    <form className="flex flex-col gap-6 p-4 sm:p-6 md:p-8 lg:p-10" onSubmit={onSubmit}>
+      <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">Let us Know More About You</h1>
+      <span className="text-xs sm:text-sm text-gray-400 font-medium mb-4">Personal Information</span>
+  
+      <div className="flex flex-wrap gap-4">
+        <InputField
+          label="Middle Name"
+          name="middleName"
+          register={register}
+          error={errors?.middleName}
+          className="w-full sm:w-[48%] lg:w-[32%]"
+        />
+        <InputField
+          label="Date of Entry"
+          name="dateOfEntry"
+          register={register}
+          error={errors?.dateOfEntry}
+          type="date"
+          className="w-full sm:w-[48%] lg:w-[32%]"
+        />
       </div>
-
-      <span className="text-xs text-gray-400 font-medium">Contact Information</span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField label="Telephone 1" name="telephone1" register={register} error={errors?.telephone1} />
-        <InputField label="Telephone 2" name="telephone2" register={register} error={errors?.telephone2} />
-        <InputField label="Date of Birth" name="dateOfBirth" register={register} error={errors?.dateOfBirth} type="date" />  
-        <SelectField label="Sex" name="sex" options={[ { value: "MALE", label: "Male" }, { value: "FEMALE", label: "Female" } ]} register={register} error={errors?.sex} />
-        <SelectField label="Marital Status" name="maritalStatus" options={[ { value: "MARRIED", label: "Married" }, { value: "SINGLE", label: "Single" }, { value: "WIDOWED", label: "Widowed" } ]} register={register} error={errors?.maritalStatus} />
+  
+      <span className="text-xs sm:text-sm text-gray-400 font-medium mb-4">Contact Information</span>
+      <div className="flex flex-wrap gap-4">
+        <InputField label="Telephone 1" name="telephone1" register={register} error={errors?.telephone1} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Telephone 2" name="telephone2" register={register} error={errors?.telephone2} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Date of Birth" name="dateOfBirth" register={register} error={errors?.dateOfBirth} type="date" className="w-full sm:w-[48%] lg:w-[32%]" />
+        <SelectField
+          label="Sex"
+          name="sex"
+          options={[
+            { value: "MALE", label: "Male" },
+            { value: "FEMALE", label: "Female" }
+          ]}
+          register={register}
+          error={errors?.sex}
+          className="w-full sm:w-[48%] lg:w-[32%]"
+        />
+        <SelectField
+          label="Marital Status"
+          name="maritalStatus"
+          options={[
+            { value: "MARRIED", label: "Married" },
+            { value: "SINGLE", label: "Single" },
+            { value: "WIDOWED", label: "Widowed" }
+          ]}
+          register={register}
+          error={errors?.maritalStatus}
+          className="w-full sm:w-[48%] lg:w-[32%]"
+        />
       </div>
-
-      <span className="text-xs text-gray-400 font-medium">Other Details</span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField label="Occupation" name="occupation" register={register} error={errors?.occupation} />
-        <InputField label="Business" name="business" register={register} error={errors?.business} />
-        <InputField label="BVN Number" name="bvn" register={register} error={errors?.bvn} />
-        <InputField label="Residential Address" name="residentialAddress" register={register} error={errors?.residentialAddress} />
-        <InputField label="LGA" name="lga" register={register} error={errors?.lga} />
-        <InputField label="State" name="state" register={register} error={errors?.state} />
-        <InputField label="Permanent Home Address" name="permanentHomeAddress" register={register} error={errors?.permanentHomeAddress} />
-        <InputField label="State of Origin" name="stateOfOrigin" register={register} error={errors?.stateOfOrigin} />
-        <InputField label="LGA 2" name="lga2" register={register} error={errors?.lga2} />
-        <InputField label="Amount Paid" name="amountPaid" register={register} error={errors?.amountPaid} />
-        <InputField label="Bank Name" name="bankName" register={register} error={errors?.bankName} />
-        <InputField label="Account Number" name="accountNumber" register={register} error={errors?.accountNumber} />
+  
+      <span className="text-xs sm:text-sm text-gray-400 font-medium mb-4">Other Details</span>
+      <div className="flex flex-wrap gap-4">
+        <InputField label="Occupation" name="occupation" register={register} error={errors?.occupation} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Business" name="business" register={register} error={errors?.business} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="BVN Number" name="bvn" register={register} error={errors?.bvn} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Residential Address" name="residentialAddress" register={register} error={errors?.residentialAddress} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="LGA" name="lga" register={register} error={errors?.lga} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="State" name="state" register={register} error={errors?.state} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Permanent Home Address" name="permanentHomeAddress" register={register} error={errors?.permanentHomeAddress} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="State of Origin" name="stateOfOrigin" register={register} error={errors?.stateOfOrigin} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="LGA 2" name="lga2" register={register} error={errors?.lga2} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Amount Paid" name="amountPaid" register={register} error={errors?.amountPaid} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Bank Name" name="bankName" register={register} error={errors?.bankName} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Account Number" name="accountNumber" register={register} error={errors?.accountNumber} className="w-full sm:w-[48%] lg:w-[32%]" />
       </div>
-
-      <span className="text-xs text-gray-400 font-medium">Next of Kin Information</span>
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField label="Next of Kin Name" name="nextOfKinName" register={register} error={errors?.nextOfKinName} />
-        <InputField label="Next of Kin Phone 1" name="nextOfKinPhone" register={register} error={errors?.nextOfKinPhone} />
-        <InputField label="Next of Kin Phone 2" name="nextOfKinPhone2" register={register} error={errors?.nextOfKinPhone2} />
-        <InputField label="Sponsor" name="sponsor" register={register} error={errors?.sponsor} />
+  
+      <span className="text-xs sm:text-sm text-gray-400 font-medium mb-4">Next of Kin Information</span>
+      <div className="flex flex-wrap gap-4">
+        <InputField label="Next of Kin Name" name="nextOfKinName" register={register} error={errors?.nextOfKinName} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Next of Kin Phone 1" name="nextOfKinPhone" register={register} error={errors?.nextOfKinPhone} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Next of Kin Phone 2" name="nextOfKinPhone2" register={register} error={errors?.nextOfKinPhone2} className="w-full sm:w-[48%] lg:w-[32%]" />
+        <InputField label="Sponsor" name="sponsor" register={register} error={errors?.sponsor} className="w-full sm:w-[48%] lg:w-[32%]" />
       </div>
-
+  
       {/* Image Upload Field */}
-      <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
-        <label className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer" htmlFor="img">
+      <div className="flex flex-col items-start gap-2 w-full sm:w-1/2 md:w-1/3 lg:w-1/4">
+        <label className="text-xs sm:text-sm text-gray-500 flex items-center gap-2 cursor-pointer" htmlFor="img">
           <span className="bg-blue-500 text-white p-2 rounded">Upload Profile Image</span>
         </label>
         <input type="file" id="img" onChange={handleImageChange} accept="image/*" className="hidden" />
-        {imgFile && <p className="text-sm text-green-500">File selected: {imgFile.name}</p>}
+        {imgFile && <p className="text-xs sm:text-sm text-green-500">File selected: {imgFile.name}</p>}
         {errors.img?.message && <p className="text-xs text-red-400">{errors.img.message.toString()}</p>}
       </div>
-
-      <button className="bg-blue-400 text-white p-2 rounded-md" onClick={onSubmit}>Submit</button>
+  
+      <button 
+    type="submit" 
+    disabled={submitting} 
+    className="bg-blue-500 text-white py-2 px-4 rounded-md self-center sm:self-start hover:bg-blue-600 transition flex items-center justify-center"
+  >
+    {submitting ? (
+      <>
+        <CircularProgress size={20} style={{ color: 'white', marginRight: '8px' }} />
+        Submitting...
+      </>
+    ) : (
+      "Submit"
+    )}
+  </button>
     </form>
   );
+  
 };
 
 export default KYCForm;

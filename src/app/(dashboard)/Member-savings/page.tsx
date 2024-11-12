@@ -159,161 +159,111 @@ const MemberSavingsPage = () => {
 
   return (
     <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
-      {/* LEFT */}
-      <div className="w-full xl:w-2/3">
-        {/* TOP */}
+      {/* LEFT SIDE */}
+      <div className="w-full xl:w-2/3 flex flex-col gap-4">
+        
+        {/* TOP SECTION */}
         <div className="flex flex-col lg:flex-row gap-4">
+          
           {/* USER INFO CARD */}
-          <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
-            <div className="w-1/3">
-            <Image
-                src={memberData?.memberDetails?.img|| "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+          <div className="bg-lamaSky p-6 rounded-md flex-1 flex flex-col sm:flex-row gap-4">
+            <div className="sm:w-1/3 flex justify-center">
+              <Image
+                src={memberData?.memberDetails?.img || "https://images.pexels.com/photos/5414817/pexels-photo-5414817.jpeg?auto=compress&cs=tinysrgb&w=1200"}
                 alt="member-profile-picture"
                 width={144}
                 height={144}
                 className="w-36 h-36 rounded-full object-cover"
               />
             </div>
-            <div className="w-2/3 flex flex-col justify-between gap-4">
-              <h1 className="text-xl font-semibold">{memberData?.surname} {memberData?.firstName}</h1>
+            <div className="sm:w-2/3 flex flex-col justify-between gap-4 text-center sm:text-left">
+              <h1 className="text-xl font-semibold">{`${memberData?.surname} ${memberData?.firstName}`}</h1>
               <p className="text-sm text-gray-500">
-              {memberData?.memberDetails?.residentialAddress}
+                {memberData?.memberDetails?.residentialAddress || "No Address Available"}
               </p>
-              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/blood.png" alt="" width={14} height={14} />
-                  <span>{memberData?.memberDetails?.occupation}</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/date.png" alt="" width={14} height={14} />
-                  <span>January 2025</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/mail.png" alt="" width={14} height={14} />
-                  <span>{memberData?.email}</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/phone.png" alt="" width={14} height={14} />
-                  <span>{memberData?.memberDetails?.telephone1}</span>
-                </div>
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 text-xs font-medium">
+                {[
+                  { icon: "/blood.png", text: memberData?.memberDetails?.occupation || "Unknown" },
+                  { icon: "/date.png", text: "January 2025" },
+                  { icon: "/mail.png", text: memberData?.email || "No Email" },
+                  { icon: "/phone.png", text: memberData?.memberDetails?.telephone1 || "No Phone" }
+                ].map((item, index) => (
+                  <div key={index} className="w-full md:w-1/2 lg:w-full 2xl:w-1/3 flex items-center gap-2">
+                    <Image src={item.icon} alt="" width={14} height={14} />
+                    <span>{item.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+  
           {/* SMALL CARDS */}
-          <div className="flex-1 flex gap-4 justify-between flex-wrap">
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleAttendance.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-              <h1 className="text-xl font-semibold">
-                  ₦{transaction?.grandTotal?.toLocaleString('en-NG') || "0"}
+          <div className="flex-1 flex flex-wrap gap-4">
+            {[
+              { icon: "/singleAttendance.png", label: "Balance", value: transaction?.grandTotal },
+              { icon: "/singleBranch.png", label: "Total Saved", value: transaction?.savingsBalance },
+              { icon: "/singleLesson.png", label: "Total Withdrawals", value: transaction?.totalWithdrawals },
+              { icon: "/singleClass.png", label: "Latest Deposit", value: transaction?.savingsDeposits }
+            ].map((card, index) => (
+              <div key={index} className="bg-white p-4 rounded-md flex gap-4 w-full sm:w-[48%] xl:w-[45%] 2xl:w-[48%]">
+                <Image src={card.icon} alt="" width={24} height={24} className="w-6 h-6" />
+                <div>
+                  <h1 className="text-xl font-semibold">
+                    ₦{card.value?.toLocaleString('en-NG') || "0"}
                   </h1>
-              <span className="text-sm text-gray-400">Balance</span>
+                  <span className="text-sm text-gray-400">{card.label}</span>
+                </div>
               </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleBranch.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.savingsBalance?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Total Saved</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleLesson.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.totalWithdrawals?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Total Withdrawals</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleClass.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.savingsDeposits?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Latest Deposit</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-        {/* BOTTOM */}
-        <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Savings & Loans</h1>
-          <TransactionsTable />
+  
+        {/* BOTTOM SECTION */}
+        <div className="mt-4 bg-white rounded-md p-4">
+          <h1 className="text-lg font-semibold">Savings & Loans</h1>
+          <div className="h-[600px] xl:h-[800px] overflow-y-auto">
+            <TransactionsTable />
+          </div>
         </div>
       </div>
-      {/* RIGHT */}
+  
+      {/* RIGHT SIDE */}
       <div className="w-full xl:w-1/3 flex flex-col gap-4">
+        
+        {/* SAVINGS CARD */}
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Savings</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-           
-          <div className="flex flex-col gap-4 bg-white p-8 rounded-lg max-w-md mx-auto mt-4">
-          <Typography variant="h6" className="font-semibold">
-            Enter Amount to Deposit
-          </Typography>
-          <TextField
-            label="depositAmount (NGN)"
-            value={depositAmount}
-            onChange={(e) => setDepositAmount(Number(e.target.value))}
-            type="number"
-            fullWidth
-            variant="outlined"
-          />
-     <FlutterWaveButton {...fwConfig} />
-        </div>
+          <div className="mt-4 flex flex-col gap-4 bg-white p-6 rounded-lg">
+            <Typography variant="h6" className="font-semibold">
+              Enter Amount to Deposit
+            </Typography>
+            <TextField
+              label="Deposit Amount (NGN)"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(Number(e.target.value))}
+              type="number"
+              fullWidth
+              variant="outlined"
+            />
+            <FlutterWaveButton {...fwConfig} />
           </div>
         </div>
-      
+  
+        {/* LOANS CARD */}
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Loans</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            
-            <div className="p-3 rounded-md bg-lamaYellowLight" >
-                  <LoanFormModal />
-                   
-            </div>
-       
+          <div className="mt-4 flex flex-col gap-4 p-3 rounded-md bg-lamaYellowLight">
+            <LoanFormModal />
           </div>
         </div>
+  
+        {/* PERFORMANCE CARD */}
         <Performance />
-        {/* <Announcements /> */}
       </div>
-
-
     </div>
   );
+  
+  
 };
 
 export default MemberSavingsPage;
