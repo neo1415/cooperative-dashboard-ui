@@ -242,9 +242,9 @@ const router = useRouter()
                 <TableCell>{transaction.telephone}</TableCell>
                 <TableCell>{transaction.savingsDeposits}</TableCell>
                 <TableCell>{transaction.withdrawals}</TableCell>
-                <TableCell>{transaction.savingsBalance}</TableCell>
-                <TableCell>{transaction.totalWithdrawals}</TableCell>
                 <TableCell>{transaction.grandTotal}</TableCell>
+                <TableCell>{transaction.totalWithdrawals}</TableCell>
+                <TableCell>{transaction.savingsBalance}</TableCell>
                 {role === 'cooperative-admin' && (
                   <TableCell>
                     <Button

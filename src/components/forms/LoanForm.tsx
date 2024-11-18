@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InputField from "../InputField";
 import { Modal, Box, Button } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,9 @@ import { useAuth } from "@/context/AuthCOntext";
 import { auth } from "@/app/api/config";
 import CircularProgress from '@mui/material/CircularProgress';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
+import useAdminSettings from "@/hooks/useAdminSettings";
+import useFetchAdminSettings from "@/hooks/useAdminSettings";
+
 
 interface Range {
   min: number;
@@ -27,6 +30,15 @@ interface Setting {
   minAmount: number | null;
   maxAmount: number | null;
   amountInterestRate: number | null;
+}
+
+export interface AdminSetting {
+  id: string;
+  loanFormPrice: number | null;
+  shareCapital: number | null;
+  entranceFee: number | null;
+  loanUpperLimit: number | null;
+  monthsToLoan: number | null;
 }
 
 const schema = z.object({
@@ -60,6 +72,7 @@ const LoanFormModal = () => {
   const [durationRanges, setDurationRanges] = useState<Range[]>([]);
   const [settings, setSettings] = useState<Setting[]>([]);
   const { role, cooperativeId, memberId, getCurrentUserToken } = useAuth();
+  const { adminSettings, loading, error } = useFetchAdminSettings(role);
 
   const { register, handleSubmit, formState: { errors }, watch } = useForm<Inputs>({
     resolver: zodResolver(schema),
@@ -68,6 +81,62 @@ const LoanFormModal = () => {
 
   const amountRequired = watch("amountRequired");
   const durationOfLoan = watch("durationOfLoan");
+
+
+  // useEffect(() => {
+  //   const fetchAdminSettings = async () => {
+  //     if (role === 'cooperative-admin' || role === 'member')  {
+  //       console.warn("User does not have the cooperative-admin role.");
+  //       return;
+  //     }
+
+  //     console.log("Fetching admin settings for role:", role);
+
+  //     try {
+  //       // Set session persistence for the auth object
+  //       await setPersistence(auth, browserSessionPersistence);
+
+  //       // Use onAuthStateChanged to ensure we handle the user authentication state
+  //       auth.onAuthStateChanged(async (user) => {
+  //         if (user) {
+  //           const token = await user.getIdToken();
+  //           console.log("Token obtained:", token);
+
+  //           const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-cooperative-admin-settings`, {
+  //             headers: {
+  //               Authorization: `Bearer ${token}`,
+  //               'Content-Type': 'application/json',
+  //             },
+  //           });
+
+  //           if (response.status === 200) {
+  //             console.log("Admin settings fetched successfully:", response.data);
+
+  //             if (Array.isArray(response.data)) {
+  //               setAdminSettings(response.data[0]); // Take the first item if it's an array
+  //             } else {
+  //               console.error("Unexpected API response format:", response.data);
+  //             }
+  //           } else {
+  //             throw new Error('Failed to fetch admin settings');
+  //           }
+  //         }
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching admin settings:", error);
+  //     }
+  //   };
+
+  //   fetchAdminSettings();
+  // }, [role]);
+
+
+
+  // useEffect(() => {
+  //   fetchData();
+  // }, [fetchData, role]);
+
+  // console.log("price",loanFormPrice)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -133,41 +202,59 @@ const LoanFormModal = () => {
     if (amountRequired && durationOfLoan) {
       const amount = parseFloat(amountRequired);
       const duration = parseInt(durationOfLoan);
-
-      const selectedAmountRange = amountRanges.find((range) =>
-        amount >= range.min && amount <= range.max
+  
+      // Determine rates for the amount and duration
+      const selectedAmountRange = amountRanges.find(
+        (range) => amount >= range.min && amount <= range.max
       );
-      const selectedDurationRange = durationRanges.find((range) =>
-        duration >= range.min && duration <= range.max
+      const selectedDurationRange = durationRanges.find(
+        (range) => duration >= range.min && duration <= range.max
       );
-
+  
       const amountRate = selectedAmountRange?.rate ?? loanInterest;
       const durationRate = selectedDurationRange?.rate ?? loanInterest;
-
+  
       setAmountInterestRate(amountRate);
       setDurationInterestRate(durationRate);
-
-      console.log("Selected amount range rate:", amountRate);
-      console.log("Selected duration range rate:", durationRate);
-
-      // Consolidate both rates into a single loan interest value
+  
+      // Calculate total loan interest rate
       const totalInterestRate = (amountRate + durationRate) / 2;
       setLoanInterest(totalInterestRate);
-
-      const interest = amount * Math.pow((1 + totalInterestRate / 100), duration / 12) - amount;
-      setAmountGranted(amount + interest);
-
-      console.log("Calculated interest:", interest);
-      console.log("Total amount granted:", amount + interest);
-
+  
+      // Interest calculation
+      const interest =
+        amount * Math.pow(1 + totalInterestRate / 100, duration / 12) - amount;
+  
+      const totalAmount = amount + interest;
+  
+      // Adding the loanFormPrice
+      const loanFormPrice = parseFloat(
+        adminSettings.loanFormPrice !== null && adminSettings.loanFormPrice !== undefined
+          ? adminSettings.loanFormPrice.toString()
+          : "0"
+      );
+  
+      setAmountGranted(totalAmount);
+      setExpectedAmountToBePaidBack(totalAmount + loanFormPrice);
+  
+      console.log("Loan Form Price:", loanFormPrice);
+      console.log("Total Amount Expected to Be Paid Back:", expectedAmountToBePaidBack);
+  
+      // Set expected reimbursement date
       const now = new Date();
       const reimbursementDate = new Date(now.setMonth(now.getMonth() + duration));
       setExpectedReimbursementDate(reimbursementDate.toISOString().split("T")[0]);
-      console.log("Expected reimbursement date:", reimbursementDate.toISOString().split("T")[0]);
     }
-  }, [amountRequired, durationOfLoan, amountRanges, durationRanges, loanInterest]);
-
-
+  }, [
+    amountRequired,
+    durationOfLoan,
+    amountRanges,
+    durationRanges,
+    loanInterest,
+    adminSettings,
+    expectedAmountToBePaidBack
+  ]);
+  
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     console.log('cooperativeId:', cooperativeId);
     console.log('memberId:', memberId);
@@ -284,7 +371,7 @@ const LoanFormModal = () => {
               <div className="flex flex-wrap gap-4 mt-4">
                 <div className="bg-gray-100 p-4 rounded shadow flex-1">
                   <label className="font-medium">Total Amount to Be Paid Back:</label>
-                  <div>{amountGranted.toFixed(2)}</div>
+                  <div>{expectedAmountToBePaidBack.toFixed(2)}</div>
                 </div>
                 <div className="bg-gray-100 p-4 rounded shadow flex-1">
                   <label className="font-medium">Loan Interest Rate (%):</label>
@@ -293,6 +380,10 @@ const LoanFormModal = () => {
                 <div className="bg-gray-100 p-4 rounded shadow flex-1">
                   <label className="font-medium">Expected Reimbursement Date:</label>
                   <div>{expectedReimbursementDate}</div>
+                </div>
+                <div className="bg-gray-100 p-4 rounded shadow flex-1">
+                  <label className="font-medium">Price of Loan Form:</label>
+                  <div>{adminSettings.loanFormPrice ?? "0"}</div>
                 </div>
               </div>
             )}
