@@ -12,6 +12,8 @@ import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
 import TransactionsTable from "../../../components/TransactionsTable";
 import LoanFormModal from "@/components/forms/LoanForm";
+import useFetchAdminSettings from "@/hooks/useAdminSettings";
+import { useAuth } from "@/context/AuthCOntext";
 
 interface Member {
   id: string;
@@ -60,7 +62,49 @@ const MemberSavingsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [depositAmount, setDepositAmount] = useState<number>(100); // Default deposit depositAmount
   const [transaction, setTransaction] = useState<Transaction | null>(null);
-// 
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+  const [isEligible, setIsEligible] = useState(false);// 
+
+  // Fetch the admin settings
+  const { role } = useAuth(); // Retrieve role from AuthContext
+  const { adminSettings} = useFetchAdminSettings(role); // Pass role to the hook
+
+    useEffect(() => {
+      const checkEligibility = async () => {
+        setCheckingEligibility(true);
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+  
+          const { eligibility } = response.data;
+          setIsEligible(eligibility === 'Eligible for Loan');
+      } catch (err) {
+        console.error('Error checking eligibility:', err);
+      } finally {
+        setCheckingEligibility(false);
+      }
+    };
+
+    if (!loading && !error) {
+      checkEligibility();
+    }
+  }, [adminSettings, loading, error]);
+
+  
+    const handleOpenLoanForm = () => {
+      if (!isEligible) {
+        alert('You are not eligible for a loan. Please check your contribution history.');
+        return;
+      }
+  
+      // Show the LoanFormModal if eligible
+      setIsModalOpen(true);
+    };
+  
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     const fetchTransaction = async () => {
       try {
@@ -112,7 +156,7 @@ const MemberSavingsPage = () => {
     fetchMemberData();
   }, []);
 
-    const config = {
+  const config = {
     public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
     tx_ref: Date.now().toString(),
     amount: depositAmount,
@@ -130,28 +174,38 @@ const MemberSavingsPage = () => {
     },
   };
 
-  const fwConfig = {
+  // Flutterwave configuration for "savings" deposit
+  const savingsConfig = {
     ...config,
-    text: "Make a contribution today!",
     callback: async (response: any) => {
-      console.log(response);
-
       if (response.status === "successful") {
-        // Log the payment amount to the backend for savings deposit
         await axios.post(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings`,
-          {
-            amount: depositAmount, // Adjusted to `amount` as expected by the backend
-            transactionId: response.transaction_id,
-          },
+          { amount: depositAmount, type: "savings", transactionId: response.transaction_id },
           { headers: { Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` } }
         );
       }
-
       closePaymentModal();
     },
     onClose: () => {},
   };
+
+  // Flutterwave configuration for "contribution" deposit
+  const contributionConfig = {
+    ...config,
+    callback: async (response: any) => {
+      if (response.status === "successful") {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings`,
+          { amount: depositAmount, type: "contribution", transactionId: response.transaction_id },
+          { headers: { Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` } }
+        );
+      }
+      closePaymentModal();
+    },
+    onClose: () => {},
+  };
+
 
   if (loading) return <CircularProgress />;
   if (error) return <p>{error}</p>;
@@ -245,7 +299,14 @@ const MemberSavingsPage = () => {
               fullWidth
               variant="outlined"
             />
-            <FlutterWaveButton {...fwConfig} />
+            <div>
+            <FlutterWaveButton {...savingsConfig} text="Deposit for Savings" />
+            </div>
+           
+            <div>
+            <FlutterWaveButton {...contributionConfig} text="Deposit for Contribution" />
+            </div>
+          
           </div>
         </div>
   
@@ -253,8 +314,20 @@ const MemberSavingsPage = () => {
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Loans</h1>
           <div className="mt-4 flex flex-col gap-4 p-3 rounded-md bg-lamaYellowLight">
-            <LoanFormModal />
-          </div>
+        {loading || checkingEligibility ? (
+          <p>Loading eligibility...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <button
+            className={`px-4 py-2 rounded ${isEligible ? 'bg-green-500' : 'bg-red-500'} text-white`}
+            onClick={handleOpenLoanForm}
+          >
+            {isEligible ? 'Apply for a Loan' : 'Ineligible for Loan'}
+          </button>
+        )}
+        {isModalOpen && <LoanFormModal />}
+      </div>
         </div>
   
         {/* PERFORMANCE CARD */}

@@ -101,7 +101,7 @@ const CooperativeForm = () => {
       {/* Cooperative Information Section */}
       <span className="text-xs text-gray-400 font-medium">Cooperative Information</span>
       <div className="flex flex-wrap gap-4">
-        <InputField
+        {/* <InputField
           label="Cooperative Name"
           name="cooperativeName"
           register={register}
@@ -114,7 +114,7 @@ const CooperativeForm = () => {
           register={register}
           error={errors?.registrationNumber}
           className="w-full md:w-[48%] lg:w-[32%]"
-        />
+        /> */}
         <InputField
           label="Date of Incorporation"
           name="dateOfIncorporation"
@@ -130,14 +130,14 @@ const CooperativeForm = () => {
           error={errors?.address}
           className="w-full"
         />
-        <InputField
+        {/* <InputField
           label="Email"
           name="email"
           type="email"
           register={register}
           error={errors?.email}
           className="w-full md:w-[48%]"
-        />
+        /> */}
         <InputField
           label="Phone Number"
           name="phoneNumber"

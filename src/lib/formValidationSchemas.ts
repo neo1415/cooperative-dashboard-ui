@@ -2,13 +2,7 @@ import { z } from "zod";
 
 export const cooperativeSchema = z.object({
   img: z.string().optional(),
-  cooperativeName: z
-    .string()
-    .min(1, { message: "Cooperative Name is required!" }),
-
-  registrationNumber: z
-    .string()
-    .min(1, { message: "Registration Number is required!" }),
+ 
 
     dateOfIncorporation: z.preprocess((arg) => {
       if (typeof arg === 'string' || arg instanceof Date) {
@@ -21,9 +15,6 @@ export const cooperativeSchema = z.object({
     .string()
     .min(1, { message: "Address is required!" }),
 
-  email: z
-    .string()
-    .email({ message: "Invalid email address!" }),
 
   phoneNumber: z
     .string()

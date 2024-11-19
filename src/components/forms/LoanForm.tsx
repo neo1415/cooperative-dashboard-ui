@@ -12,8 +12,8 @@ import { useAuth } from "@/context/AuthCOntext";
 import { auth } from "@/app/api/config";
 import CircularProgress from '@mui/material/CircularProgress';
 import { browserSessionPersistence, setPersistence } from "firebase/auth";
-import useAdminSettings from "@/hooks/useAdminSettings";
 import useFetchAdminSettings from "@/hooks/useAdminSettings";
+import useLoanLimit from "@/hooks/useLoanLimit";
 
 
 interface Range {
@@ -41,20 +41,19 @@ export interface AdminSetting {
   monthsToLoan: number | null;
 }
 
-const schema = z.object({
-  amountRequired: z.string().min(1, { message: "Amount Required is required!" }),
-  purposeOfLoan: z.string().min(1, { message: "Purpose of Loan is required!" }),
-  durationOfLoan: z.string().min(1, { message: "Duration of Loan is required!" }),
-  bvn: z.string().length(11, { message: "BVN Number must be exactly 11 digits!" }),
-  nameOfSurety1: z.string().min(1, { message: "Surety 1 Name is required!" }),
-  surety1MembersNo: z.string().min(1, { message: "Surety 1 Members No is required!" }),
-  surety1telePhone: z.string().min(10, { message: "Surety 1 Phone number must be 10-15 digits!" }).max(15, { message: "Surety 1 Phone number must be 10-15 digits!" }),
-  nameOfSurety2: z.string().min(1, { message: "Surety 2 Name is required!" }),
-  surety2MembersNo: z.string().min(1, { message: "Surety 2 Members No is required!" }),
-  surety2telePhone: z.string().min(10, { message: "Surety 2 Phone number must be 10-15 digits!" }).max(15, { message: "Surety 2 Phone number must be 10-15 digits!" }),
-});
+export type Inputs = {
+  amountRequired: string;
+  purposeOfLoan: string;
+  durationOfLoan: string;
+  bvn: string;
+  nameOfSurety1: string;
+  surety1MembersNo: string;
+  surety1telePhone: string;
+  nameOfSurety2: string;
+  surety2MembersNo: string;
+  surety2telePhone: string;
+};
 
-export type Inputs = z.infer<typeof schema>;
 
 const LoanFormModal = () => {
   const [open, setOpen] = useState(false);
@@ -73,7 +72,29 @@ const LoanFormModal = () => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const { role, cooperativeId, memberId, getCurrentUserToken } = useAuth();
   const { adminSettings, loading, error } = useFetchAdminSettings(role);
+  const { loanLimit, loading: loanLimitLoading, error: loanLimitError } = useLoanLimit();
 
+  const schema = z.object({
+    amountRequired: z
+    .string()
+    .min(1, { message: "Amount Required is required!" })
+    .refine((value) => {
+      const amount = parseFloat(value);
+      return loanLimit === null || amount <= loanLimit;
+    }, { message: `Amount exceeds loan limit. Please enter an amount below ${loanLimit}.` }),
+    purposeOfLoan: z.string().min(1, { message: "Purpose of Loan is required!" }),
+    durationOfLoan: z.string().min(1, { message: "Duration of Loan is required!" }),
+    bvn: z.string().length(11, { message: "BVN Number must be exactly 11 digits!" }),
+    nameOfSurety1: z.string().min(1, { message: "Surety 1 Name is required!" }),
+    surety1MembersNo: z.string().min(1, { message: "Surety 1 Members No is required!" }),
+    surety1telePhone: z.string().min(10, { message: "Surety 1 Phone number must be 10-15 digits!" }).max(15, { message: "Surety 1 Phone number must be 10-15 digits!" }),
+    nameOfSurety2: z.string().min(1, { message: "Surety 2 Name is required!" }),
+    surety2MembersNo: z.string().min(1, { message: "Surety 2 Members No is required!" }),
+    surety2telePhone: z.string().min(10, { message: "Surety 2 Phone number must be 10-15 digits!" }).max(15, { message: "Surety 2 Phone number must be 10-15 digits!" }),
+  });
+  
+  // export type Inputs = z.infer<typeof schema>;
+  
   const { register, handleSubmit, formState: { errors }, watch } = useForm<Inputs>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
@@ -82,6 +103,10 @@ const LoanFormModal = () => {
   const amountRequired = watch("amountRequired");
   const durationOfLoan = watch("durationOfLoan");
 
+  useEffect(() => {
+    if (loanLimitError) setSubmitError(loanLimitError);
+    console.log('limit', loanLimit)
+  }, [loanLimitError, loanLimit]);
 
   // useEffect(() => {
   //   const fetchAdminSettings = async () => {
@@ -365,6 +390,9 @@ const LoanFormModal = () => {
                 type="number"
               />
             </div>
+            {loanLimitLoading && <p>Loading loan limit...</p>}
+      {/* {loanLimit && <p>Loan limit: {loanLimit}</p>} */}
+      {submitError && <p className="text-red-500">{submitError}</p>}
   
             {/* Calculated Fields Display */}
             {amountRequired && durationOfLoan && (
