@@ -27,6 +27,7 @@ export interface AdminSetting {
   entranceFee: number | null;
   loanUpperLimit: number | null;
   monthsToLoan: number | null;
+  gracePeriod: number | null,
 }
 
 type SettingType = 'loan' | 'admin';
@@ -55,6 +56,16 @@ const LoanInterestSettings: React.FC = () => {
     },
   };
 
+  const defaultAdminSettings: AdminSetting = {
+    id: 'default', // Temporary ID for default settings
+    loanFormPrice: 0,
+    shareCapital: 0,
+    entranceFee: 0,
+    loanUpperLimit: 0,
+    monthsToLoan: 0,
+    gracePeriod: 0, // Added this field to match your AdminSetting interface
+  };
+
   const fetchData = useCallback(
     async (type: SettingType) => {
       if (role !== 'cooperative-admin') return;
@@ -66,10 +77,17 @@ const LoanInterestSettings: React.FC = () => {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (type === 'loan') setSettings(response.data);
-        else setAdminSettings(response.data);
+
+        if (type === 'loan') {
+          setSettings(response.data);
+        } else {
+          const adminData = response.data;
+          setAdminSettings(adminData.length > 0 ? adminData : [defaultAdminSettings]);
+        }
       } catch (error) {
         console.error(`Error fetching ${type} settings:`, error);
+        // If fetching fails, ensure default settings are displayed
+        if (type === 'admin') setAdminSettings([defaultAdminSettings]);
       }
     },
     [role]
@@ -151,6 +169,9 @@ const LoanInterestSettings: React.FC = () => {
     fetchData('loan');
     fetchData('admin');
   }, [fetchData, role]);
+
+  const currentAdminSettings = adminSettings[0] || defaultAdminSettings;
+
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
@@ -338,39 +359,37 @@ const LoanInterestSettings: React.FC = () => {
       {/* Admin Settings */}
       <Typography variant="h6" className="mt-6 mb-3">Admin Settings</Typography>
       <div className="bg-white rounded shadow p-4">
-        {adminSettings.length > 0 && (
-          <div className="flex flex-col gap-4">
-            {['loanFormPrice', 'shareCapital', 'entranceFee', 'loanUpperLimit', 'monthsToLoan'].map(
-              (field) => (
-                <div key={field} className="flex items-center gap-2">
-                  <span>{`${field}: `}</span>
-                  {isEditingAdmin ? (
-                    <TextField
-                      type="number"
-                      value={adminNewValues[field as keyof AdminSetting] ?? adminSettings[0][field as keyof AdminSetting] ?? 0}
-                      onChange={(e) =>
-                        setAdminNewValues((prev) => ({ ...prev, [field]: +e.target.value }))
-                      }
-                    />
-                  ) : (
-                    <span>{adminSettings[0][field as keyof AdminSetting] ?? 0}</span>
-                  )}
-                </div>
-              )
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                if (isEditingAdmin) handleEditAdminSetting();
-                setIsEditingAdmin(!isEditingAdmin);
-              }}
-              className="mt-4"
-            >
-              {isEditingAdmin ? 'Save' : 'Edit'}
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-col gap-4">
+          {['loanFormPrice', 'shareCapital', 'entranceFee', 'loanUpperLimit', 'monthsToLoan', 'gracePeriod'].map(
+            (field) => (
+              <div key={field} className="flex items-center gap-2">
+                <span>{`${field}: `}</span>
+                {isEditingAdmin ? (
+                  <TextField
+                    type="number"
+                    value={adminNewValues[field as keyof AdminSetting] ?? currentAdminSettings[field as keyof AdminSetting] ?? 0}
+                    onChange={(e) =>
+                      setAdminNewValues((prev) => ({ ...prev, [field]: +e.target.value }))
+                    }
+                  />
+                ) : (
+                  <span>{currentAdminSettings[field as keyof AdminSetting] ?? 0}</span>
+                )}
+              </div>
+            )
+          )}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              if (isEditingAdmin) handleEditAdminSetting();
+              setIsEditingAdmin(!isEditingAdmin);
+            }}
+            className="mt-4"
+          >
+            {isEditingAdmin ? 'Save' : 'Edit'}
+          </Button>
+        </div>
       </div>
     </div>
   );

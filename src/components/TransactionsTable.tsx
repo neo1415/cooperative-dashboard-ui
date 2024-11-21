@@ -1,269 +1,195 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, MenuItem,
-  Select, Button, CircularProgress, InputLabel, FormControl
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  TablePagination,
 } from '@mui/material';
-import axios from 'axios';
-import { CSVLink } from 'react-csv';
-import dayjs from 'dayjs';
 import { auth } from '@/app/api/config';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthCOntext';
+import axios from 'axios';
 
-
-// Define the interface for transaction data
-export interface Transaction {
-  id?: string;
-  img?: string;
-  firstName?: string;
-  surname?: string;
-  email?: string;
-  dateOfEntry: string;
-  telephone?: string;
-  type: 'savings' | 'loans';  // Ensure type property is included in each transaction
-  savingsDeposits: number;
-  withdrawals: number;
-  savingsBalance: number;
-  totalWithdrawals: number;
+interface Record {
+  date: string;
+  savings: number;
+  contributions: number;
+  loans: number;
   grandTotal: number;
+  cumulativeSavings?: number; // Optional, added on the frontend
+  cumulativeContributions?: number; // Optional, added on the frontend
+  cumulativeLoans?: number; // Optional, added on the frontend
 }
 
-// Component
 const TransactionsTable: React.FC = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
-  const [search, setSearch] = useState<string>('');
-  const [month, setMonth] = useState<string | undefined>();
-  const [year, setYear] = useState<string | undefined>();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [filterType, setFilterType] = useState<'savings' | 'loans' | ''>('');  // Filter by type
+  const [records, setRecords] = useState<Record[]>([]);
+  const [filter, setFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const months = Array.from({ length: 12 }, (_, i) => dayjs().month(i).format('MMMM'));
-  const years = Array.from(new Set(transactions.map((t) => dayjs(t.dateOfEntry).year().toString())));
-
-const router = useRouter()
-
-  const handleViewMoreClick = (memberId: string) => {
-    router.push(`/member-savings/${memberId}`); // Navigate to the specific member's page
-  };
-  const { role } = useAuth();
-  const isAuthenticated = role !== null;
-  const isAdmin = role === "cooperative-admin";
-  // Fetch transactions data on component mount
   useEffect(() => {
-    const fetchTransactions = async () => {
-      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-      
-      const unsubscribe = auth.onAuthStateChanged(async (user) => {
-        if (user) {
-          try {
-            const token = await user.getIdToken();
-            const response = await axios.get(`${serverURL}/transactions`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (response.status === 200) {
-              setTransactions(response.data);
-              setFilteredTransactions(response.data);
-            } else {
-              throw new Error('Failed to fetch transactions');
-            }
-          } catch (error) {
-            console.error('Failed to fetch transactions:', error);
-          } finally {
-            setLoading(false);
-          }
-        } else {
-          console.warn('No authenticated user found.');
-          setLoading(false);
+    const fetchRecords = async () => {
+      try {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (!user) {
+          setError('User not authenticated');
+          return;
         }
-      });
 
-      return () => unsubscribe();
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        const response = await axios.get<{ stats: Record[] }>(`${serverURL}/member/savings/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Log API response for debugging
+        console.log('API Response:', response.data);
+
+        // Sort records by date
+        const sortedRecords = response.data.stats.sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        // Calculate cumulative totals
+        let cumulativeSavings = 0;
+        let cumulativeContributions = 0;
+        let cumulativeLoans = 0;
+
+        const enrichedRecords = sortedRecords.map((record) => {
+          cumulativeSavings += record.savings || 0;
+          cumulativeContributions += record.contributions || 0;
+          cumulativeLoans += record.loans || 0;
+
+          return {
+            ...record,
+            cumulativeSavings,
+            cumulativeContributions,
+            cumulativeLoans,
+          };
+        });
+
+        setRecords(enrichedRecords);
+      } catch (err) {
+        console.error('Failed to fetch records:', err);
+        setError('Failed to fetch records');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchTransactions();
+    fetchRecords();
   }, []);
 
-  // Filter transactions based on search, type, month, and year
-  useEffect(() => {
-    let tempTransactions = transactions;
+  const filteredRecords = records.filter((record) => {
+    const matchesSearch = search
+      ? Object.values(record).some((value) =>
+          String(value).toLowerCase().includes(search.toLowerCase())
+        )
+      : true;
 
-    // Filter by search term
-    if (search) {
-      tempTransactions = tempTransactions.filter(
-        (t) =>
-          (t.firstName?.toLowerCase().includes(search.toLowerCase()) ||
-           t.surname?.toLowerCase().includes(search.toLowerCase()) ||
-           t.email?.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
+    const matchesFilter = filter ? record.date.startsWith(filter) : true;
 
-    // Filter by transaction type
-    if (filterType) {
-      tempTransactions = tempTransactions.filter((t) => t.type === filterType);
-    }
+    return matchesSearch && matchesFilter;
+  });
 
-    // Filter by month and year
-    if (month) {
-      tempTransactions = tempTransactions.filter(
-        (t) => dayjs(t.dateOfEntry).format('MMMM') === month
-      );
-    }
-    if (year) {
-      tempTransactions = tempTransactions.filter(
-        (t) => dayjs(t.dateOfEntry).year().toString() === year
-      );
-    }
+  const paginatedRecords = filteredRecords.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-    setFilteredTransactions(tempTransactions);
-  }, [search, filterType, month, year, transactions]);
+  const uniqueMonths = Array.from(
+    new Set(records.map((record) => record.date.slice(0, 7)))
+  );
 
-  if (loading) return <CircularProgress />;
+  const handlePageChange = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   return (
-    <div>
-      {/* Filters */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: '16px', 
-          marginBottom: '20px', 
-          alignItems: 'center' 
-        }}
-      >
-        <TextField
-          label="Search"
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, email"
-          style={{ flex: '1 1 150px', minWidth: '150px' }}
-        />
-        <FormControl style={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <InputLabel>Month</InputLabel>
-          <Select 
-            value={month || ''} 
-            onChange={(e) => setMonth(e.target.value || undefined)}
-          >
-            <MenuItem value="">All</MenuItem>
-            {months.map((m) => (
-              <MenuItem key={m} value={m}>{m}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl style={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <InputLabel>Year</InputLabel>
-          <Select 
-            value={year || ''} 
-            onChange={(e) => setYear(e.target.value || undefined)}
-          >
-            <MenuItem value="">All</MenuItem>
-            {years.map((y) => (
-              <MenuItem key={y} value={y}>{y}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {/* <Button
-          variant="outlined"
-          size="small"
-          color={filterType === 'savings' ? 'primary' : 'inherit'}
-          onClick={() => setFilterType('savings')}
+    <>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {loading && <p>Loading records...</p>}
+
+      <FormControl variant="outlined" fullWidth>
+        <InputLabel>Filter by Month/Year</InputLabel>
+        <Select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          label="Filter by Month/Year"
         >
-          Savings
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          color={filterType === 'loans' ? 'primary' : 'inherit'}
-          onClick={() => setFilterType('loans')}
-        >
-          Loans
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => setFilterType('')}
-        >
-          All
-        </Button> */}
-        {/* <Button 
-          variant="outlined" 
-          size="small" 
-          style={{ height: 40, flexShrink: 0 }}
-        >
-          <CSVLink 
-            data={filteredTransactions} 
-            filename="transactions.csv" 
-            style={{ textDecoration: 'none', color: 'inherit' }}
-          >
-            Export to CSV
-          </CSVLink>
-        </Button> */}
-      </div>
-  
-      {/* Transactions Table */}
-      <TableContainer 
-        component={Paper} 
-        style={{ overflowX: 'auto' }}
-      >
+          {uniqueMonths.map((month) => (
+            <MenuItem key={month} value={month}>
+              {month}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <TextField
+        fullWidth
+        label="Search by Value"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ margin: '20px 0' }}
+      />
+
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Date</TableCell>
-              {/* <TableCell>First Name</TableCell>
-              <TableCell>Last Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Telephone</TableCell> */}
-              <TableCell>Savings Deposits</TableCell>
-              <TableCell>Withdrawals</TableCell>
-              <TableCell>Total Savings</TableCell>
-              <TableCell>Total Withdrawals</TableCell>
+              <TableCell>Savings</TableCell>
+              <TableCell>Contributions</TableCell>
+              <TableCell>Loans</TableCell>
+              <TableCell>Cumulative Savings</TableCell>
+              <TableCell>Cumulative Contributions</TableCell>
+              <TableCell>Cumulative Loans</TableCell>
               <TableCell>Grand Total</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow 
-                key={transaction.id} 
-                style={{ backgroundColor: transaction.type === 'savings' ? 'lightSkyBlue' : 'lightGoldenRodYellow' }}
-              >
-                <TableCell>{dayjs(transaction.dateOfEntry).format('DD MMM YYYY')}</TableCell>
-                {/* <TableCell>{transaction.firstName}</TableCell>
-                <TableCell>{transaction.surname}</TableCell>
-                <TableCell>{transaction.email}</TableCell>
-                <TableCell>{transaction.telephone}</TableCell> */}
-                <TableCell>{transaction.savingsDeposits}</TableCell>
-                <TableCell>{transaction.withdrawals}</TableCell>
-                <TableCell>{transaction.savingsBalance}</TableCell>
-                <TableCell>{transaction.totalWithdrawals}</TableCell>
-                <TableCell>{transaction.grandTotal}</TableCell>
-                {role === 'cooperative-admin' && (
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => handleViewMoreClick(transaction.id)}
-                    >
-                      View More
-                    </Button>
-                  </TableCell>
-                )}
+            {paginatedRecords.map((record) => (
+              <TableRow key={record.date}>
+                <TableCell>{record.date}</TableCell>
+                <TableCell>{record.savings}</TableCell>
+                <TableCell>{record.contributions}</TableCell>
+                <TableCell>{record.loans}</TableCell>
+                <TableCell>{record.cumulativeSavings}</TableCell>
+                <TableCell>{record.cumulativeContributions}</TableCell>
+                <TableCell>{record.cumulativeLoans}</TableCell>
+                <TableCell>{record.grandTotal}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-    </div>
+
+      <TablePagination
+        component="div"
+        count={filteredRecords.length}
+        page={page}
+        onPageChange={handlePageChange}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleRowsPerPageChange}
+      />
+    </>
   );
-  
 };
 
 export default TransactionsTable;

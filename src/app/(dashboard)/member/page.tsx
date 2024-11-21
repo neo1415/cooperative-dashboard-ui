@@ -47,6 +47,18 @@ interface MemberDetails {
   dateOfBirth: string
 }
 
+interface Stats {
+  totalContributions: number;
+  totalSavings: number;
+  totalLoans: number;
+  latestTransaction: {
+    type: string;
+    amount: number;
+    date: string;
+  } | null;
+  savingsBalance: number;
+}
+
 export interface Transaction {
   id: string;
   firstName?: string;
@@ -75,7 +87,75 @@ const MemberProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
-// 
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [isEligible, setIsEligible] = useState(false);// 
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (!user) {
+          setError("User not authenticated");
+          return;
+        }
+
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+        const response = await axios.get(`${serverURL}/member/savings/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = response.data.stats;
+        const latestRecord = data[data.length - 1];
+
+        // Calculate totals
+        const totalContributions = data.reduce((sum, record) => sum + (record.contributions || 0), 0);
+        const totalSavings = data.reduce((sum, record) => sum + (record.savings || 0), 0);
+        const totalLoans = data.reduce((sum, record) => sum + (record.loans || 0), 0);
+
+        // Get the latest transaction
+        const latestTransaction = latestRecord
+          ? {
+              type: latestRecord.contributions > 0
+                ? "Contribution"
+                : latestRecord.savings > 0
+                ? "Savings"
+                : latestRecord.loans > 0
+                ? "Loan"
+                : "None",
+              amount:
+                latestRecord.contributions ||
+                latestRecord.savings ||
+                latestRecord.loans ||
+                0,
+              date: latestRecord.date,
+            }
+          : null;
+
+        // Update state
+        setStats({
+          totalContributions,
+          totalSavings,
+          totalLoans,
+          latestTransaction,
+          savingsBalance: latestRecord?.grandTotal || 0,
+        });
+
+        // Check eligibility
+        setIsEligible(response.data.eligibility === "Eligible for Loan");
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+        setError("Failed to fetch stats");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+
 useEffect(() => {
   const fetchTransaction = async () => {
     try {
@@ -187,71 +267,58 @@ function formatDateToDDMMYYYY(dateString: string): string {
           </div>
           {/* SMALL CARDS */}
           <div className="flex-1 flex gap-4 justify-between flex-wrap">
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleAttendance.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-              <h1 className="text-xl font-semibold">
-                  ₦{transaction?.grandTotal?.toLocaleString('en-NG') || "0"}
-                  </h1>
-              <span className="text-sm text-gray-400">Balance</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleBranch.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.savingsBalance?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Total Saved</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleLesson.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.totalWithdrawals?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Total Withdrawals</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleClass.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">
-                ₦{transaction?.savingsDeposits?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                <span className="text-sm text-gray-400">Latest Deposit</span>
-              </div>
-            </div>
+          {stats
+    ? [
+        {
+          icon: "/singleAttendance.png",
+          label: "Balance",
+          value: stats.savingsBalance,
+        },
+        {
+          icon: "/singleBranch.png",
+          label: "Total Saved",
+          value: stats.totalSavings,
+        },
+        {
+          icon: "/singleLesson.png",
+          label: "Total Loans",
+          value: stats.totalLoans,
+        },
+        {
+          icon: "/singleClass.png",
+          label: "Latest Transaction",
+          value: stats.latestTransaction
+            ? `${stats.latestTransaction.type}: ₦${stats.latestTransaction.amount.toLocaleString(
+                "en-NG"
+              )} `
+            : "No Transactions",
+        },
+      ].map((card, index) => (
+        <div
+          key={index}
+          className="bg-white p-4 rounded-md flex gap-4 w-full sm:w-[48%] xl:w-[45%] 2xl:w-[48%]"
+        >
+          <Image
+            src={card.icon}
+            alt=""
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
+          <div>
+            <h1 className="text-xl font-semibold">
+              {typeof card.value === "number"
+                ? `₦${card.value.toLocaleString("en-NG")}`
+                : card.value}
+            </h1>
+            <span className="text-sm text-gray-400">{card.label}</span>
           </div>
+        </div>
+      ))
+    : loading
+    ? <p>Loading...</p>
+    : <p className="text-red-500">{error}</p>}
+</div>
         </div>
         {/* BOTTOM */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">

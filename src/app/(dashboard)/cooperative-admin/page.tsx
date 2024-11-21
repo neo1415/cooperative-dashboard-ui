@@ -11,6 +11,7 @@ import axios from 'axios';
 import { CooperativeData } from '../cooperative-profile/page';
 import UserCard from '@/components/UserCards';
 import { useAuth } from '@/context/AuthCOntext';
+import { useSavingsStats } from '@/hooks/useSavingsSrat';
 
 const AdminPage = () => {
   const [cooperativeData, setCooperativeData] = useState<CooperativeData | null>(null);
@@ -19,6 +20,8 @@ const AdminPage = () => {
   const [totalSavings, setTotalSavings] = useState(0);
   const [totalLoansApproved, setTotalLoansApproved] = useState(0);
   const { getCurrentUserToken } = useAuth();
+  const { loanStats, } = useSavingsStats();
+  
 
   useEffect(() => {
     const fetchData = async () => {

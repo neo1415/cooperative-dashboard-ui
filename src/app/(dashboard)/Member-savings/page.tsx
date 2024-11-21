@@ -29,8 +29,10 @@ interface MemberDetails {
   telephone1: string;
   telephone2?: string;
   sex: string;
-  residentialAddress: string
+  residentialAddress: string;
   occupation: string;
+  registrationNumber: string;
+  dateOfBirth:string;
   img: string;
 }
 
@@ -48,6 +50,17 @@ export interface Transaction {
   grandTotal: number;
 }
 
+interface Stats {
+  totalContributions: number;
+  totalSavings: number;
+  totalLoans: number;
+  latestTransaction: {
+    type: string;
+    amount: number;
+    date: string;
+  } | null;
+  savingsBalance: number;
+}
 
 declare global {
   interface Window {
@@ -64,33 +77,75 @@ const MemberSavingsPage = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   const [isEligible, setIsEligible] = useState(false);// 
-
+  const [stats, setStats] = useState<Stats | null>(null);
   // Fetch the admin settings
   const { role } = useAuth(); // Retrieve role from AuthContext
   const { adminSettings} = useFetchAdminSettings(role); // Pass role to the hook
 
-    useEffect(() => {
-      const checkEligibility = async () => {
-        setCheckingEligibility(true);
-        try {
-          const token = await auth.currentUser?.getIdToken();
-          const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-  
-          const { eligibility } = response.data;
-          setIsEligible(eligibility === 'Eligible for Loan');
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (!user) {
+          setError("User not authenticated");
+          return;
+        }
+
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+        const response = await axios.get(`${serverURL}/member/savings/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = response.data.stats;
+        const latestRecord = data[data.length - 1];
+
+        // Calculate totals
+        const totalContributions = data.reduce((sum, record) => sum + (record.contributions || 0), 0);
+        const totalSavings = data.reduce((sum, record) => sum + (record.savings || 0), 0);
+        const totalLoans = data.reduce((sum, record) => sum + (record.loans || 0), 0);
+
+        // Get the latest transaction
+        const latestTransaction = latestRecord
+          ? {
+              type: latestRecord.contributions > 0
+                ? "Contribution"
+                : latestRecord.savings > 0
+                ? "Savings"
+                : latestRecord.loans > 0
+                ? "Loan"
+                : "None",
+              amount:
+                latestRecord.contributions ||
+                latestRecord.savings ||
+                latestRecord.loans ||
+                0,
+              date: latestRecord.date,
+            }
+          : null;
+
+        // Update state
+        setStats({
+          totalContributions,
+          totalSavings,
+          totalLoans,
+          latestTransaction,
+          savingsBalance: latestRecord?.grandTotal || 0,
+        });
+
+        // Check eligibility
+        setIsEligible(response.data.eligibility === "Eligible for Loan");
       } catch (err) {
-        console.error('Error checking eligibility:', err);
+        console.error("Failed to fetch stats:", err);
+        setError("Failed to fetch stats");
       } finally {
-        setCheckingEligibility(false);
+        setLoading(false);
       }
     };
 
-    if (!loading && !error) {
-      checkEligibility();
-    }
-  }, [adminSettings, loading, error]);
+    fetchStats();
+  }, []);
 
   
     const handleOpenLoanForm = () => {
@@ -237,8 +292,8 @@ const MemberSavingsPage = () => {
               </p>
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 text-xs font-medium">
                 {[
-                  { icon: "/blood.png", text: memberData?.memberDetails?.occupation || "Unknown" },
-                  { icon: "/date.png", text: "January 2025" },
+                  { icon: "/blood.png", text: memberData?.memberDetails?.registrationNumber || "Unknown" },
+                  { icon: "/date.png", text: memberData?.memberDetails?.dateOfBirth },
                   { icon: "/mail.png", text: memberData?.email || "No Email" },
                   { icon: "/phone.png", text: memberData?.memberDetails?.telephone1 || "No Phone" }
                 ].map((item, index) => (
@@ -253,23 +308,58 @@ const MemberSavingsPage = () => {
   
           {/* SMALL CARDS */}
           <div className="flex-1 flex flex-wrap gap-4">
-            {[
-              { icon: "/singleAttendance.png", label: "Balance", value: transaction?.grandTotal },
-              { icon: "/singleBranch.png", label: "Total Saved", value: transaction?.savingsBalance },
-              { icon: "/singleLesson.png", label: "Total Withdrawals", value: transaction?.totalWithdrawals },
-              { icon: "/singleClass.png", label: "Latest Deposit", value: transaction?.savingsDeposits }
-            ].map((card, index) => (
-              <div key={index} className="bg-white p-4 rounded-md flex gap-4 w-full sm:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-                <Image src={card.icon} alt="" width={24} height={24} className="w-6 h-6" />
-                <div>
-                  <h1 className="text-xl font-semibold">
-                    ₦{card.value?.toLocaleString('en-NG') || "0"}
-                  </h1>
-                  <span className="text-sm text-gray-400">{card.label}</span>
-                </div>
-              </div>
-            ))}
+          {stats
+    ? [
+        {
+          icon: "/singleAttendance.png",
+          label: "Balance",
+          value: stats.savingsBalance,
+        },
+        {
+          icon: "/singleBranch.png",
+          label: "Total Saved",
+          value: stats.totalSavings,
+        },
+        {
+          icon: "/singleLesson.png",
+          label: "Total Loans",
+          value: stats.totalLoans,
+        },
+        {
+          icon: "/singleClass.png",
+          label: "Latest Transaction",
+          value: stats.latestTransaction
+            ? `${stats.latestTransaction.type}: ₦${stats.latestTransaction.amount.toLocaleString(
+                "en-NG"
+              )} `
+            : "No Transactions",
+        },
+      ].map((card, index) => (
+        <div
+          key={index}
+          className="bg-white p-4 rounded-md flex gap-4 w-full sm:w-[48%] xl:w-[45%] 2xl:w-[48%]"
+        >
+          <Image
+            src={card.icon}
+            alt=""
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
+          <div>
+            <h1 className="text-xl font-semibold">
+              {typeof card.value === "number"
+                ? `₦${card.value.toLocaleString("en-NG")}`
+                : card.value}
+            </h1>
+            <span className="text-sm text-gray-400">{card.label}</span>
           </div>
+        </div>
+      ))
+    : loading
+    ? <p>Loading...</p>
+    : <p className="text-red-500">{error}</p>}
+</div>
         </div>
   
         {/* BOTTOM SECTION */}
