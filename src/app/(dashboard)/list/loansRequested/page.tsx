@@ -52,14 +52,14 @@ interface LoanRequest {
     cooperativeName: string;
   };
 }
-interface LoanStats {
-  totalLoans: number;
-  approvedLoans: number;
-  rejectedLoans: number;
-  pendingLoans: number;
-  totalRequestedAmount: number;
-  totalGrantedAmount: number;
-}
+// interface LoanStats {
+//   totalLoans: number;
+//   approvedLoans: number;
+//   rejectedLoans: number;
+//   pendingLoans: number;
+//   totalRequestedAmount: number;
+//   totalGrantedAmount: number;
+// }
 
 const LoanRequestsPage: React.FC = () => {
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
@@ -67,13 +67,21 @@ const LoanRequestsPage: React.FC = () => {
   const [filteredLoanRequests, setFilteredLoanRequests] = useState<LoanRequest[]>([]);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-  const [, setLoanStats] = useState<LoanStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedLoan, setSelectedLoan] = useState<LoanRequest | null>(null);
   const [status, setStatus] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const { loanStats, error } = useSavingsStats();
+  const [loanStats, setLoanStats] = useState({
+    totalLoans: 0,
+    approvedLoans: 0,
+    pendingLoans: 0,
+    totalRequestedAmount: 0,
+    expectedAmountToBePaidBack: 0,
+  });
+
   const router = useRouter()
+  const { getCurrentUserToken } = useAuth();
 
 
   const handleOpenModal = (loanId: string) => {
@@ -95,6 +103,54 @@ const LoanRequestsPage: React.FC = () => {
   useEffect(() => {
     console.log("Role:", role, "Cooperative ID:", cooperativeId, "Member ID:", memberId);
   }, [role, cooperativeId, memberId]);
+
+  useEffect(() => {
+    const fetchLoanStats = async () => {
+      try {
+        setLoading(true);
+
+        // Get authentication token
+        const token = await getCurrentUserToken();
+        if (!token) throw new Error('Authentication token not found');
+
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+        const response = await axios.get(`${serverURL}/loan-requests`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const loanRequests = response.data;
+
+        // Calculate statistics
+        const totalLoans = loanRequests.length;
+        const approvedLoans = loanRequests.filter((loan: any) => loan.pending === false).length;
+        const pendingLoans = loanRequests.filter((loan: any) => loan.pending === true).length;
+        const totalRequestedAmount = loanRequests.reduce(
+          (sum: number, loan: any) => sum + loan.expectedAmountToBePaidBack,
+          0
+        );
+        const expectedAmountToBePaidBack= loanRequests.reduce(
+          (sum: number, loan: any) => (loan.pending === false ? sum + loan.expectedAmountToBePaidBack : sum),
+          0
+        );
+
+        setLoanStats({
+          totalLoans,
+          approvedLoans,
+          pendingLoans,
+          totalRequestedAmount,
+          expectedAmountToBePaidBack,
+        });
+      } catch (err: any) {
+        console.error('Error fetching loan stats:', err.message);
+        setError(err.message || 'Failed to fetch loan stats');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLoanStats();
+  }, [getCurrentUserToken]);
+
 
   useEffect(() => {
     const fetchLoanRequests = async () => {
@@ -131,35 +187,7 @@ const LoanRequestsPage: React.FC = () => {
     }
   }, [role, cooperativeId, memberId]);
 
-  // useEffect(() => {
-  //   const fetchLoanStats = async () => {
-  //     try {
-  //       const token = await auth.currentUser?.getIdToken();
-  //       console.log('Fetched token:', token);
-  
-  //       const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-  //       console.log('Server URL:', serverURL);
-  
-  //       const response = await axios.get(`${serverURL}/loan-stats`, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-  
-  //       if (response.status === 200) {
-  //         console.log('Loan Stats response:', response.data);
-  //         setLoanStats(response.data);
-  //       } else {
-  //         console.warn('Failed to fetch loan statistics, response status:', response.status);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching loan statistics:', error);
-  //     }
-  //   };
-  
-  //   fetchLoanStats();
-  // }, [role, cooperativeId, memberId]);
-  
+ 
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
@@ -277,35 +305,37 @@ const LoanRequestsPage: React.FC = () => {
   
       <div className="flex flex-wrap gap-4">
         {/* CARD */}
-         {/* Total Loans Requested Card */}
-         <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
-        <h1 className="text-xl font-semibold">{loanStats?.totalLoans ?? 0}</h1>
+  {/* Total Loans Requested Card */}
+  <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+        <h1 className="text-xl font-semibold">{loanStats.totalLoans}</h1>
         <span className="text-sm text-gray-400">Total Loans Requested</span>
       </div>
 
       {/* Approved Loans Card */}
       <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
-        <h1 className="text-xl font-semibold">{loanStats?.approvedLoans ?? 0}</h1>
+        <h1 className="text-xl font-semibold">{loanStats.approvedLoans}</h1>
         <span className="text-sm text-gray-400">Total Approved Loans</span>
+      </div>
+
+      {/* Pending Loans Card */}
+      <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
+        <h1 className="text-xl font-semibold"> {loanStats.pendingLoans}</h1>
+        <span className="text-sm text-gray-400">Total Pending Loans</span>
       </div>
 
       {/* Total Requested Amount Card */}
       <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
-        <h1 className="text-xl font-semibold">
-          ₦{loanStats?.totalRequestedAmount ?? 0}
-        </h1>
+        <h1 className="text-xl font-semibold">₦{loanStats?.totalRequestedAmount ?? 0}</h1>
         <span className="text-sm text-gray-400">Total Amount Requested</span>
       </div>
 
-      {/* Total Granted Amount Card */}
+      {/* Total Approved Amount Card */}
       <div className="bg-white p-4 rounded-md shadow-sm flex-1 sm:w-[48%] md:w-[23%]">
-        <h1 className="text-xl font-semibold">
-          ₦{loanStats?.totalGrantedAmount ?? 0}
-        </h1>
-        <span className="text-sm text-gray-400">Total Amount Granted</span>
+        <h1 className="text-xl font-semibold"> ₦{loanStats.expectedAmountToBePaidBack}</h1>
+        <span className="text-sm text-gray-400">Total Amount Approved</span>
       </div>
-      </div>
-  
+    </div>
+
       <TableContainer component={Paper} className="mt-8 overflow-x-auto">
         <Table>
           <TableHead>

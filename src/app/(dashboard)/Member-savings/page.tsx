@@ -33,6 +33,7 @@ interface MemberDetails {
   occupation: string;
   registrationNumber: string;
   dateOfBirth:string;
+  amountPaid: string;
   img: string;
 }
 

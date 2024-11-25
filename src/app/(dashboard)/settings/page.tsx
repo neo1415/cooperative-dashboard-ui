@@ -28,6 +28,7 @@ export interface AdminSetting {
   loanUpperLimit: number | null;
   monthsToLoan: number | null;
   gracePeriod: number | null,
+  increaseRate: number | null,
 }
 
 type SettingType = 'loan' | 'admin';
@@ -64,6 +65,7 @@ const LoanInterestSettings: React.FC = () => {
     loanUpperLimit: 0,
     monthsToLoan: 0,
     gracePeriod: 0, // Added this field to match your AdminSetting interface
+    increaseRate:0,
   };
 
   const fetchData = useCallback(
@@ -360,7 +362,7 @@ const LoanInterestSettings: React.FC = () => {
       <Typography variant="h6" className="mt-6 mb-3">Admin Settings</Typography>
       <div className="bg-white rounded shadow p-4">
         <div className="flex flex-col gap-4">
-          {['loanFormPrice', 'shareCapital', 'entranceFee', 'loanUpperLimit', 'monthsToLoan', 'gracePeriod'].map(
+          {['loanFormPrice', 'shareCapital', 'entranceFee', 'loanUpperLimit', 'monthsToLoan', 'gracePeriod', "increaseRate"].map(
             (field) => (
               <div key={field} className="flex items-center gap-2">
                 <span>{`${field}: `}</span>

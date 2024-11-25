@@ -1,10 +1,8 @@
-// File: /client/hooks/useSavingsStats.ts
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthCOntext';
 
-
-// Define the shape of the expected response
+// Define the shape of the loan statistics
 interface LoanStats {
   totalLoans: number;
   approvedLoans: number;
@@ -12,6 +10,7 @@ interface LoanStats {
   totalGrantedAmount: number;
 }
 
+// Define the shape of the savings statistics API response
 interface SavingsStats {
   stats: Array<{
     date: string;
@@ -25,88 +24,60 @@ interface SavingsStats {
 
 export const useSavingsStats = () => {
   const { role, cooperativeId, memberId, getCurrentUserToken } = useAuth();
+
+  // State for loan stats
   const [loanStats, setLoanStats] = useState<LoanStats | null>(null);
+
+  // State for error messages
   const [error, setError] = useState<string | null>(null);
+
+  // State for loading indicator
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchSavingsStats = async () => {
-      console.log('Starting fetchSavingsStats...');
       try {
         setLoading(true);
 
+        // Get the authentication token
         const token = await getCurrentUserToken();
-        if (!token) {
-          console.error('Authentication token not found');
-          throw new Error('Authentication token not found');
-        }
+        if (!token) throw new Error('Authentication token not found');
 
         const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
 
-        // Determine the API endpoint and params based on user role
+        if (!cooperativeId && !memberId) throw new Error('User ID not found');
+
+        // Determine the endpoint based on the user's role
         const endpoint =
           role === 'Cooperative Admin'
             ? `${serverURL}/cooperative/savings/stats?cooperativeId=${cooperativeId}`
             : `${serverURL}/member/savings/stats?memberId=${memberId}`;
 
-        console.log(`Sending API request to ${endpoint} as ${role}...`);
+        // Make the API call
         const response = await axios.get<SavingsStats>(endpoint, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        console.log('API response received:', response.data);
 
         const { stats } = response.data;
 
         // Aggregate loan statistics
-        const totalLoans = stats.reduce(
-          (count, record) => count + (record.loans > 0 ? 1 : 0),
-          0
-        );
-        const approvedLoans = stats.reduce(
-          (count, record) =>
-            count +
-            (record.loans > 0 && record.grandTotal >= 0 ? 1 : 0),
-          0
-        );
-        const totalRequestedAmount = stats.reduce(
-          (sum, record) => sum + record.loans,
-          0
-        );
+        const totalLoans = stats.filter((record) => record.loans > 0).length;
+        const approvedLoans = stats.filter(
+          (record) => record.loans > 0 && record.grandTotal >= 0
+        ).length;
+        const totalRequestedAmount = stats.reduce((sum, record) => sum + record.loans, 0);
         const totalGrantedAmount = stats.reduce(
-          (sum, record) =>
-            sum + (record.grandTotal >= 0 ? record.loans : 0),
+          (sum, record) => sum + (record.grandTotal >= 0 ? record.loans : 0),
           0
         );
 
-        console.log('Calculated totals:', {
-          totalLoans,
-          approvedLoans,
-          totalRequestedAmount,
-          totalGrantedAmount,
-        });
-
-        setLoanStats({
-          totalLoans,
-          approvedLoans,
-          totalRequestedAmount,
-          totalGrantedAmount,
-        });
-
-        console.log('Updated loanStats state:', {
-          totalLoans,
-          approvedLoans,
-          totalRequestedAmount,
-          totalGrantedAmount,
-        });
+        // Update the loan stats state
+        setLoanStats({ totalLoans, approvedLoans, totalRequestedAmount, totalGrantedAmount });
       } catch (err: any) {
-        console.error('Error fetching stats:', err.message || err);
+        // Handle errors
         setError(err.message || 'Failed to fetch stats');
       } finally {
         setLoading(false);
-        console.log('Finished fetching stats');
       }
     };
 
