@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthCOntext";
 import axios from "axios";
 import CircularProgress from '@mui/material/CircularProgress';
+import { auth } from "@/app/api/config";
+import { signOut } from "firebase/auth";
 
 
 
@@ -28,6 +30,16 @@ const CooperativeForm = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imgFile, setImgFile] = useState<File | null>(null); // New state for image file
   const { role, cooperativeId, getCurrentUserToken } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login'); // Redirect to login page after sign out
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   const onSubmit = handleSubmit(async (data) => {
     if (!cooperativeId) {
       setSubmitError("Error: Cooperative ID not found. Please log in again.");
@@ -73,6 +85,7 @@ const CooperativeForm = () => {
       });
   
       if (response.status === 200) {
+        handleLogout()
         router.push("/");
       } else {
         setSubmitError(response.data.error || "Failed to submit member KYC form");

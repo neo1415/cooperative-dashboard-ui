@@ -11,6 +11,7 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthCOntext";
 import CircularProgress from '@mui/material/CircularProgress';
 import { auth } from "@/app/api/config";
+import { signOut } from "firebase/auth";
 
 const KYCForm = () => {
   const {
@@ -25,6 +26,15 @@ const KYCForm = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imgFile, setImgFile] = useState<File | null>(null); // New state for image file
   const { role, memberId, getCurrentUserToken } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/'); // Redirect to login page after sign out
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const onSubmit = handleSubmit(async (data) => {
     if (!memberId) {
@@ -71,6 +81,7 @@ const KYCForm = () => {
       });
   
       if (response.status === 200) {
+        handleLogout()
         router.push("/");
       } else {
         setSubmitError(response.data.error || "Failed to submit member KYC form");

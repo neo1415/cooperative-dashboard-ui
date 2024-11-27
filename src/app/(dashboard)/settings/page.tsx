@@ -68,32 +68,28 @@ const LoanInterestSettings: React.FC = () => {
     increaseRate:0,
   };
 
-  const fetchData = useCallback(
-    async (type: SettingType) => {
-      if (role !== 'cooperative-admin') return;
-      const endpoint = apiEndpoints[type].fetch;
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
+  const fetchData = useCallback(async (type: SettingType) => {
+  if (role !== 'cooperative-admin') return;
 
-      try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const endpoint = apiEndpoints[type].fetch;
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) return;
 
-        if (type === 'loan') {
-          setSettings(response.data);
-        } else {
-          const adminData = response.data;
-          setAdminSettings(adminData.length > 0 ? adminData : [defaultAdminSettings]);
-        }
-      } catch (error) {
-        console.error(`Error fetching ${type} settings:`, error);
-        // If fetching fails, ensure default settings are displayed
-        if (type === 'admin') setAdminSettings([defaultAdminSettings]);
-      }
-    },
-    [role]
-  );
+  try {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (type === 'loan') {
+      setSettings(response.data);
+    } else {
+      const adminData = response.data;
+      setAdminSettings(adminData.length > 0 ? adminData : []);
+    }
+  } catch (error) {
+    console.error(`Error fetching ${type} settings:`, error);
+  }
+}, [role]);
 
   const handleAddSetting = async () => {
     const token = await auth.currentUser?.getIdToken();
@@ -154,16 +150,17 @@ const LoanInterestSettings: React.FC = () => {
     if (!token) return;
   
     try {
-      console.log('Editing admin setting with data:', adminNewValues);
+      const adminSettingId = adminSettings[0]?.id;
   
-      // Ensure the ID exists
-      if (!adminSettings[0]?.id) {
-        console.error('No admin setting ID found');
+      if (!adminSettingId) {
+        console.error('Admin setting ID not found.');
         return;
       }
   
+      console.log('Editing admin setting:', adminNewValues);
+  
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}${apiEndpoints.admin.edit}${adminSettings[0].id}`,
+        `${process.env.NEXT_PUBLIC_SERVER_URL}${apiEndpoints.admin.edit}${adminSettingId}`,
         adminNewValues,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -173,14 +170,18 @@ const LoanInterestSettings: React.FC = () => {
       console.log('Admin setting updated:', response.data);
   
       setAdminSettings((prev) =>
-        prev.map((setting) => ({ ...setting, ...adminNewValues }))
+        prev.map((setting) =>
+          setting.id === adminSettingId ? { ...setting, ...adminNewValues } : setting
+        )
       );
+  
       setIsEditingAdmin(false);
       setAdminNewValues({});
     } catch (error) {
       console.error('Error saving admin setting:', error);
     }
   };
+  
   
   useEffect(() => {
     fetchData('loan');
