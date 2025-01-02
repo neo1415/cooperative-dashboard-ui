@@ -13,6 +13,7 @@ import BigCalendar from "@/components/BigCalender";
 import EventCalendar from "@/components/EventCalender";
 import { FaCamera } from "react-icons/fa";
 import LoanFormModal from "@/components/forms/LoanForm";
+import CreditScore from "@/components/CreditScore";
 
 interface Member {
   id: string;
@@ -401,14 +402,12 @@ useEffect(() => {
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">WIthdrawals</h1>
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            
-            {/* <div className="p-3 rounded-md bg-lamaYellowLight" >
-             Loans
-                   <LoanFormModal />
-                   
-            </div> */}
        
           </div>
+
+          <div>
+        <CreditScore />
+      </div>
         </div>
         <Performance />
         {/* <Announcements /> */}

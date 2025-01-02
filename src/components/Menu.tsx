@@ -15,8 +15,8 @@ const menuItems = [
       { icon: "/teacher.png", label: "Loans", href: "/list/loansRequested", visible: ["admin", "super-admin", "auditor", "member"] },
       { icon: "/teacher.png", label: "Member Loans", href: "/list/loansRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
       { icon: "/teacher.png", label: "Loans Approved", href: "/list/loansApproved", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
-      { icon: "/student.png", label: "Assets Requested", href: "/list/assetsRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
-      { icon: "/student.png", label: "Assets Transferred", href: "/list/assetsTransfered", visible: ["admin", "super-admin", "auditor", "cooperative-admin"] },
+      { icon: "/student.png", label: "Assets Requested", href: "/list/assetsRequested", visible: ["admin", "super-admin", "auditor", "cooperative-admin", "member"] },
+      { icon: "/student.png", label: "Assets", href: "/list/assets", visible: ["admin", "super-admin", "auditor", "cooperative-admin", 'member'] },
       { icon: "/subject.png", label: "Debtors", href: "/list/debtors", visible: ["admin", "super-admin", "cooperative-admin"] },
       { icon: "/lesson.png", label: "My Transactions", href: "/Member-savings", visible: ["member"] },
       { icon: "/class.png", label: "Market Place", href: "/list/marketPlace", visible: ["admin", "member", "cooperative-admin"] },
@@ -26,7 +26,7 @@ const menuItems = [
       { icon: "/assignment.png", label: "All Assets", href: "/list/allAssetsPage", visible: ["super-admin", "admin", "member"] },
       { icon: "/assignment.png", label: "All Loans", href: "/list/allLoansPage", visible: ["super-admin", "admin", "member"] },
       // { icon: "/assignment.png", label: "All Products", href: "/list/allProductsPage", visible: ["super-admin", "admin", "member"] },
-      // { icon: "/result.png", label: "Reports", href: "/list/generalReports", visible: ["admin", "super-admin", "auditor"] },
+      { icon: "/result.png", label: "Reports", href: "/list/reports", visible: ["cooperative-admin", "super-admin", "auditor", "member"] },
       // { icon: "/calendar.png", label: "Analytics", href: "/list/analytics", visible: ["admin", "super-admin", "member", "auditor"] },
       // { icon: "/message.png", label: "Messages", href: "/list/messages", visible: ["admin", "super-admin", "member", "auditor"] },
       { icon: "/announcement.png", label: "Announcements", href: "/list/announcements", visible: ["admin", "teacher", "student", "parent"] },
@@ -35,7 +35,7 @@ const menuItems = [
   {
     title: "OTHER",
     items: [
-      { icon: "/profile.png", label: "Profile", href: "/cooperative-profile", visible: ["admin", "super-admin", "cooperative-admin"] },
+      { icon: "/profile.png", label: "Profile", href: "/cooperative-profile", visible: ["admin", "super-admin", "cooperative-admin", "member"] },
       { icon: "/profile.png", label: "My-Profile", href: "/member-profile", visible: ["admin", "super-admin","member"] },
       { icon: "/setting.png", label: "Settings", href: "/settings", visible: ["admin", "super-admin", "member", "auditor", "cooperative-admin"] },
       { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "super-admin", "member", "auditor", "cooperative-admin"] },

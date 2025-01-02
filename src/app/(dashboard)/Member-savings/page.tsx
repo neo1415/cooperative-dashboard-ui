@@ -1,10 +1,7 @@
 "use client"
 
-import Announcements from "@/components/Announcements";
-import BigCalendar from "@/components/BigCalender";
 import Performance from "@/components/Performance";
 import Image from "next/image";
-import Link from "next/link";
 import {  closePaymentModal, FlutterWaveButton } from 'flutterwave-react-v3';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -14,6 +11,7 @@ import TransactionsTable from "../../../components/TransactionsTable";
 import LoanFormModal from "@/components/forms/LoanForm";
 import useFetchAdminSettings from "@/hooks/useAdminSettings";
 import { useAuth } from "@/context/AuthCOntext";
+import CreditScore from "@/components/CreditScore";
 
 interface Member {
   id: string;
@@ -79,6 +77,8 @@ const MemberSavingsPage = () => {
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   const [isEligible, setIsEligible] = useState(false);// 
   const [stats, setStats] = useState<Stats | null>(null);
+  const [isFirstDeposit, setIsFirstDeposit] = useState(false);
+  const [shareCapital, setShareCapital] = useState<number | null>(null);
   // Fetch the admin settings
   const { role } = useAuth(); // Retrieve role from AuthContext
   const { adminSettings} = useFetchAdminSettings(role); // Pass role to the hook
@@ -192,23 +192,33 @@ const MemberSavingsPage = () => {
       try {
         setLoading(true);
         const user = auth.currentUser;
-        if (user) {
-          const token = await user.getIdToken();
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
-          const response = await axios.get<Member>(`${serverURL}/member/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setMemberData(response.data);
-        } else {
-          setError('User not authenticated');
+        if (!user) {
+          throw new Error("User not authenticated");
         }
-      } catch (error) {
-        setError('Failed to fetch member data');
-        console.error(error);
+
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+
+        // Fetch member profile
+        const profileResponse = await axios.get(`${serverURL}/member/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMemberData(profileResponse.data);
+
+        // Check if it's the first deposit
+        const savingsResponse = await axios.get(`${serverURL}/member/first-deposit`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsFirstDeposit(savingsResponse.data.isFirstDeposit);
+        setShareCapital(savingsResponse.data.shareCapital);
+      } catch (err) {
+        setError("Failed to fetch member data");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchMemberData();
   }, []);
 
@@ -246,14 +256,17 @@ const MemberSavingsPage = () => {
     onClose: () => {},
   };
 
+  const contributionAmount = Number(memberData?.memberDetails?.amountPaid || 0);
+
   // Flutterwave configuration for "contribution" deposit
   const contributionConfig = {
     ...config,
+    amount: contributionAmount, // Fixed amount for contributions
     callback: async (response: any) => {
       if (response.status === "successful") {
         await axios.post(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings`,
-          { amount: depositAmount, type: "contribution", transactionId: response.transaction_id },
+          { amount: contributionAmount, type: "contribution", transactionId: response.transaction_id },
           { headers: { Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` } }
         );
       }
@@ -261,6 +274,7 @@ const MemberSavingsPage = () => {
     },
     onClose: () => {},
   };
+
 
 
   if (loading) return <CircularProgress />;
@@ -390,14 +404,19 @@ const MemberSavingsPage = () => {
               fullWidth
               variant="outlined"
             />
-            <div>
+
             <FlutterWaveButton {...savingsConfig} text="Deposit for Savings" />
-            </div>
-           
-            <div>
-            <FlutterWaveButton {...contributionConfig} text="Deposit for Contribution" />
-            </div>
-          
+    
+    
+            <Typography variant="h6" className="font-semibold">
+            Fixed Contribution Amount: NGN {contributionAmount}
+          </Typography>
+          <FlutterWaveButton {...contributionConfig} text="Deposit for Contribution" />
+          {isFirstDeposit && shareCapital && (
+            <Typography color="primary">
+              Note: An additional NGN {shareCapital} will be added to your first deposit as share capital.
+            </Typography>
+          )}
           </div>
         </div>
   
@@ -418,6 +437,9 @@ const MemberSavingsPage = () => {
           </button>
         )}
         {isModalOpen && <LoanFormModal />}
+      </div>
+      <div>
+        <CreditScore />
       </div>
         </div>
   

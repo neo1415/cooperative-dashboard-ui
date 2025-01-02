@@ -1,168 +1,206 @@
-import Announcements from "@/components/Announcements";
-import BigCalendar from "@/components/BigCalender";
-//import FormModal from "@/components/FormModal";
-import Performance from "@/components/Performance";
-import { role } from "@/lib/data";
-import Image from "next/image";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Carousel } from "react-responsive-carousel";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import Button from "@mui/material/Button";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import { auth } from "@/app/api/config";
 
-const SingleTeacherPage = () => {
+const AssetDetailsModal = ({ assetId, open, onClose }) => {
+  const [asset, setAsset] = useState(null);
+  const [error, setError] = useState(null);
+  const [selectedDuration, setSelectedDuration] = useState("");
+  const [unitsRequested, setUnitsRequested] = useState(1); // Default to 1 unit
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  useEffect(() => {
+    if (!assetId) return;
+
+    const fetchAssetDetails = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setError("User not authenticated");
+          return;
+        }
+
+        const token = await user.getIdToken();
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+
+        const { data } = await axios.get(`${serverURL}/fetchIndividualAssets/${assetId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setAsset(data.asset);
+        setSelectedDuration(
+          data.asset.minDurationMonths ? data.asset.minDurationMonths : ""
+        ); // Preselect the minimum duration
+        setTotalPrice(calculateTotalPrice(1, data.asset.assetPrice, data.asset.priceInterestRate, data.asset.durationInterestRate));
+      } catch (error) {
+        console.error("Error fetching asset details:", error);
+        setError("Failed to load asset details");
+      }
+    };
+
+    fetchAssetDetails();
+  }, [assetId]);
+
+  const calculateTotalPrice = (units, price, priceRate, durationRate) => {
+    const totalInterestRate = (1 + priceRate / 100) * (1 + durationRate / 100) - 1;
+    return units * price * (1 + totalInterestRate);
+  };
+
+  const handleDurationChange = (event) => {
+    const newDuration = event.target.value;
+    setSelectedDuration(newDuration);
+    setTotalPrice(
+      calculateTotalPrice(unitsRequested, asset.assetPrice, asset.priceInterestRate, asset.durationInterestRate)
+    );
+  };
+
+  const handleIncreaseUnits = () => {
+    if (unitsRequested < asset.unitNumber) {
+      const newUnits = unitsRequested + 1;
+      setUnitsRequested(newUnits);
+      setTotalPrice(
+        calculateTotalPrice(newUnits, asset.assetPrice, asset.priceInterestRate, asset.durationInterestRate)
+      );
+    }
+  };
+
+  const handleDecreaseUnits = () => {
+    if (unitsRequested > 1) {
+      const newUnits = unitsRequested - 1;
+      setUnitsRequested(newUnits);
+      setTotalPrice(
+        calculateTotalPrice(newUnits, asset.assetPrice, asset.priceInterestRate, asset.durationInterestRate)
+      );
+    }
+  };
+
+  const handleTakeLoan = async () => {
+    if (!selectedDuration || isNaN(unitsRequested) || Number(unitsRequested) <= 0) {
+      setError("Please select a valid duration and specify the number of units.");
+      return;
+    }
+
+    if (!asset || !auth.currentUser) {
+      setError("Failed to retrieve required data. Please try again.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const user = auth.currentUser;
+      const token = await user.getIdToken();
+
+      const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+
+      const response = await axios.post(
+        `${serverURL}/assets-requested`,
+        {
+          memberId: user.uid,
+          cooperativeId: asset.cooperativeId,
+          assetId,
+          durationOfLoan: selectedDuration,
+          unitsRequested,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        alert("Loan request successfully submitted!");
+        onClose();
+      } else {
+        setError("Failed to submit loan request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting loan request:", error);
+      setError(
+        error.response?.data?.error || "Failed to submit loan request. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!asset) return null;
+
+  const availableDurations = [];
+  if (asset.minDurationMonths && asset.maxDurationMonths) {
+    for (let i = asset.minDurationMonths; i <= asset.maxDurationMonths; i++) {
+      availableDurations.push(i);
+    }
+  }
+
   return (
-    <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
-      {/* LEFT */}
-      <div className="w-full xl:w-2/3">
-        {/* TOP */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* USER INFO CARD */}
-          <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
-            <div className="w-1/3">
-              <Image
-                src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt="info-card-image"
-                width={144}
-                height={144}
-                className="w-36 h-36 rounded-full object-cover"
-              />
+    <Modal open={open} onClose={onClose}>
+      <Box className="bg-white w-[90%] h-[90%] p-6 overflow-y-auto mx-auto mt-[5%] rounded-lg shadow-lg">
+        <div className="flex">
+          <Carousel showThumbs={false}>
+            {asset.img1 && <div><img src={asset.img1} alt="Asset Image 1" /></div>}
+            {asset.img2 && <div><img src={asset.img2} alt="Asset Image 2" /></div>}
+            {asset.img3 && <div><img src={asset.img3} alt="Asset Image 3" /></div>}
+          </Carousel>
+
+          <div className="flex flex-col ml-6">
+            <h1 className="text-2xl font-bold mt-4">{asset.assetName}</h1>
+            <p className="text-gray-800 mt-4">Units Available: {asset.unitNumber}</p>
+            <p className="text-lg font-semibold mt-2">Unit Price: ${asset.assetPrice}</p>
+
+            <div className="flex items-center mt-4">
+              <Button variant="contained" onClick={handleDecreaseUnits} disabled={unitsRequested <= 1}>
+                -
+              </Button>
+              <p className="mx-4">{unitsRequested}</p>
+              <Button variant="contained" onClick={handleIncreaseUnits} disabled={unitsRequested >= asset.unitNumber}>
+                +
+              </Button>
             </div>
-            <div className="w-2/3 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">Leonard Snyder</h1>
-                {/* {role === "admin" && 
-                <FormModal
-                  table="teacher"
-                  type="update"
-                  data={{
-                    id: 1,
-                    username: "deanguerrero",
-                    email: "deanguerrero@gmail.com",
-                    password: "password",
-                    firstName: "Dean",
-                    lastName: "Guerrero",
-                    phone: "+1 234 567 89",
-                    address: "1234 Main St, Anytown, USA",
-                    bloodType: "A+",
-                    dateOfBirth: "2000-01-01",
-                    sex: "male",
-                    img: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1200",
-                  }}
-                />} */}
-              </div>
-              <p className="text-sm text-gray-500">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-              </p>
-              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/blood.png" alt="" width={14} height={14} />
-                  <span>A+</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/date.png" alt="" width={14} height={14} />
-                  <span>January 2025</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/mail.png" alt="" width={14} height={14} />
-                  <span>user@gmail.com</span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/phone.png" alt="" width={14} height={14} />
-                  <span>+1 234 567</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* SMALL CARDS */}
-          <div className="flex-1 flex gap-4 justify-between flex-wrap">
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleAttendance.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">90%</h1>
-                <span className="text-sm text-gray-400">Attendance</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleBranch.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">2</h1>
-                <span className="text-sm text-gray-400">Branches</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleLesson.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">6</h1>
-                <span className="text-sm text-gray-400">Lessons</span>
-              </div>
-            </div>
-            {/* CARD */}
-            <div className="bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
-              <Image
-                src="/singleClass.png"
-                alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              <div className="">
-                <h1 className="text-xl font-semibold">6</h1>
-                <span className="text-sm text-gray-400">Classes</span>
-              </div>
-            </div>
+
+            <p className="text-lg mt-4">Total Price: ${totalPrice.toFixed(2)}</p>
+
+            <Select
+              value={selectedDuration}
+              onChange={handleDurationChange}
+              displayEmpty
+              renderValue={(value) => (value ? `${value} months` : "Select Duration")}
+              className="w-full mt-4"
+              disabled={isSubmitting}
+            >
+              <MenuItem value="" disabled>
+                Select Duration
+              </MenuItem>
+              {availableDurations.map((duration, index) => (
+                <MenuItem key={index} value={duration}>
+                  {duration} months
+                </MenuItem>
+              ))}
+            </Select>
+
+            <Button
+              variant="contained"
+              color="primary"
+              className="mt-6"
+              onClick={handleTakeLoan}
+              disabled={asset.unitNumber === 0 || isSubmitting}
+            >
+              {asset.unitNumber === 0 ? "Out of Stock" : isSubmitting ? "Submitting..." : "Take Loan"}
+            </Button>
+            {error && <p className="text-red-600 mt-4">{error}</p>}
           </div>
         </div>
-        {/* BOTTOM */}
-        <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Teacher&apos;s Schedule</h1>
-          <BigCalendar />
-        </div>
-      </div>
-      {/* RIGHT */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-4">
-        <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">Shortcuts</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-            <Link className="p-3 rounded-md bg-lamaSkyLight" href="/">
-              Teacher&apos;s Classes
-            </Link>
-            <Link className="p-3 rounded-md bg-lamaPurpleLight" href="/">
-              Teacher&apos;s Students
-            </Link>
-            <Link className="p-3 rounded-md bg-lamaYellowLight" href="/">
-              Teacher&apos;s Lessons
-            </Link>
-            <Link className="p-3 rounded-md bg-pink-50" href="/">
-              Teacher&apos;s Exams
-            </Link>
-            <Link className="p-3 rounded-md bg-lamaSkyLight" href="/">
-              Teacher&apos;s Assignments
-            </Link>
-          </div>
-        </div>
-        <Performance />
-        <Announcements />
-      </div>
-    </div>
+      </Box>
+    </Modal>
   );
 };
 
-export default SingleTeacherPage;
+export default AssetDetailsModal;

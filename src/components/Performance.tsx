@@ -46,7 +46,7 @@ const Performance = () => {
   const total = savingsBalance + totalWithdrawals;
   const data = [
     { name: "Savings Balance", value: (savingsBalance / total) * 100, fill: "#C3EBFA" },
-    { name: "Total Withdrawals", value: (totalWithdrawals / total) * 100, fill: "#FAE27C" },
+    { name: "Total Loans", value: (totalWithdrawals / total) * 100, fill: "#FAE27C" },
   ];
 
   return (
@@ -77,7 +77,7 @@ const Performance = () => {
       style={{color: "#C3EBFA"}}
       >Savings </span >vs <span
       style={{ color: "#FAE27C" }}
-      ></span>Withdrawals</h2>
+      ></span>Loans</h2>
     </div>
   );
 };

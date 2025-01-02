@@ -8,6 +8,7 @@ import { CircularProgress, TextField, Typography } from '@mui/material';
 import { auth } from "@/app/api/config";
 import TransactionsTable from "../../../components/TransactionsTable";
 import EventCalendar from "@/components/EventCalender";
+import CreditScore from "@/components/CreditScore";
 
 interface Member {
   id: string;
@@ -328,21 +329,10 @@ function formatDateToDDMMYYYY(dateString: string): string {
       </div>
       {/* RIGHT */}
       <div className="w-full xl:w-1/3 flex flex-col gap-4">
-        {/* <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">Savings</h1>
-          <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
-           
-          <div className="flex flex-col gap-4 bg-white p-8 rounded-lg max-w-md mx-auto mt-4">
-          <Typography variant="h6" className="font-semibold">
-            Calendar Reminder
-          </Typography>
-          <EventCalendar />
-        </div>
-          </div>
-        </div>
-       */}
 
-      
+             <div>
+        <CreditScore />
+      </div>
         <Performance />
         {/* <Announcements /> */}
       </div>
