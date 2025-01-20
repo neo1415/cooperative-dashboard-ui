@@ -89,8 +89,7 @@ const MemberSavingsPage = () => {
         setLoading(true);
         const user = auth.currentUser;
         if (!user) {
-          setError("User not authenticated");
-          return;
+          throw new Error("User not authenticated");
         }
 
         const token = await user.getIdToken();
@@ -99,47 +98,47 @@ const MemberSavingsPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = response.data.stats;
-        const latestRecord = data[data.length - 1];
+        const data = response.data.stats || [];
+        const latestRecord = data[data.length - 1] || {};
 
-        // Calculate totals
         const totalContributions = data.reduce((sum, record) => sum + (record.contributions || 0), 0);
         const totalSavings = data.reduce((sum, record) => sum + (record.savings || 0), 0);
         const totalLoans = data.reduce((sum, record) => sum + (record.loans || 0), 0);
 
-        // Get the latest transaction
-        const latestTransaction = latestRecord
-          ? {
-              type: latestRecord.contributions > 0
-                ? "Contribution"
-                : latestRecord.savings > 0
-                ? "Savings"
-                : latestRecord.loans > 0
-                ? "Loan"
-                : "None",
-              amount:
-                latestRecord.contributions ||
-                latestRecord.savings ||
-                latestRecord.loans ||
-                0,
-              date: latestRecord.date,
-            }
-          : null;
-
-        // Update state
         setStats({
           totalContributions,
           totalSavings,
           totalLoans,
-          latestTransaction,
-          savingsBalance: latestRecord?.grandTotal || 0,
+          latestTransaction: latestRecord
+            ? {
+                type: latestRecord.contributions > 0
+                  ? "Contribution"
+                  : latestRecord.savings > 0
+                  ? "Savings"
+                  : latestRecord.loans > 0
+                  ? "Loan"
+                  : "None",
+                amount:
+                  latestRecord.contributions ||
+                  latestRecord.savings ||
+                  latestRecord.loans ||
+                  0,
+                date: latestRecord.date || "N/A",
+              }
+            : null,
+          savingsBalance: latestRecord.grandTotal || 0,
         });
 
-        // Check eligibility
         setIsEligible(response.data.eligibility === "Eligible for Loan");
       } catch (err) {
         console.error("Failed to fetch stats:", err);
-        setError("Failed to fetch stats");
+        setStats({
+          totalContributions: 0,
+          totalSavings: 0,
+          totalLoans: 0,
+          latestTransaction: null,
+          savingsBalance: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -161,66 +160,65 @@ const MemberSavingsPage = () => {
   
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (user) {
+    useEffect(() => {
+      const fetchTransaction = async () => {
+        try {
+          setLoading(true);
+          const user = auth.currentUser;
+          if (!user) throw new Error("User not authenticated");
+  
           const token = await user.getIdToken();
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
           const response = await axios.get<Transaction>(`${serverURL}/single-transaction`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          setTransaction(response.data);
-        } else {
-          setError('User not authenticated');
+  
+          setTransaction(response.data || null);
+        } catch (err) {
+          console.error("Failed to fetch transaction:", err);
+          setTransaction(null); // Default placeholder
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        setError('Failed to fetch transaction');
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransaction();
-  }, []);
-
-  useEffect(() => {
-    const fetchMemberData = async () => {
-      try {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (!user) {
-          throw new Error("User not authenticated");
+      };
+  
+      fetchTransaction();
+    }, []);
+  
+    useEffect(() => {
+      const fetchMemberData = async () => {
+        try {
+          setLoading(true);
+          const user = auth.currentUser;
+          if (!user) throw new Error("User not authenticated");
+  
+          const token = await user.getIdToken();
+          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+  
+          const profileResponse = await axios.get(`${serverURL}/member/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+  
+          setMemberData(profileResponse.data || { name: "N/A", email: "N/A" });
+  
+          const savingsResponse = await axios.get(`${serverURL}/member/first-deposit`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+  
+          setIsFirstDeposit(savingsResponse.data.isFirstDeposit || false);
+          setShareCapital(savingsResponse.data.shareCapital || 0);
+        } catch (err) {
+          console.error("Failed to fetch member data:", err);
+          setMemberData(null); // Default placeholder
+          setIsFirstDeposit(false);
+          setShareCapital(0);
+        } finally {
+          setLoading(false);
         }
-
-        const token = await user.getIdToken();
-        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
-
-        // Fetch member profile
-        const profileResponse = await axios.get(`${serverURL}/member/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMemberData(profileResponse.data);
-
-        // Check if it's the first deposit
-        const savingsResponse = await axios.get(`${serverURL}/member/first-deposit`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsFirstDeposit(savingsResponse.data.isFirstDeposit);
-        setShareCapital(savingsResponse.data.shareCapital);
-      } catch (err) {
-        setError("Failed to fetch member data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMemberData();
-  }, []);
+      };
+  
+      fetchMemberData();
+    }, []);
 
   const config = {
     public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
