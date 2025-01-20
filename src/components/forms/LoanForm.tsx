@@ -71,8 +71,12 @@ const LoanFormModal = () => {
   const [durationRanges, setDurationRanges] = useState<Range[]>([]);
   const [settings, setSettings] = useState<Setting[]>([]);
   const { role, cooperativeId, memberId, getCurrentUserToken } = useAuth();
-  const { adminSettings, loading, error } = useFetchAdminSettings(role);
+  const { adminSettings, loading} = useFetchAdminSettings(role);
   const { loanLimit, loading: loanLimitLoading, error: loanLimitError } = useLoanLimit();
+  const [surety1Name, setSurety1Name] = useState<string | null>(null);
+  const [surety1MembersNo, setSurety1MembersNo] = useState<string | null>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const schema = z.object({
     amountRequired: z
@@ -103,65 +107,48 @@ const LoanFormModal = () => {
   const amountRequired = watch("amountRequired");
   const durationOfLoan = watch("durationOfLoan");
 
+
   useEffect(() => {
-    if (loanLimitError) setSubmitError(loanLimitError);
-    console.log('limit', loanLimit)
-  }, [loanLimitError, loanLimit]);
+    const fetchAllMembers = async () => {
+      try {
+        console.log("Fetching all members...");
+        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+        const token = await getCurrentUserToken();
 
-  // useEffect(() => {
-  //   const fetchAdminSettings = async () => {
-  //     if (role === 'cooperative-admin' || role === 'member')  {
-  //       console.warn("User does not have the cooperative-admin role.");
-  //       return;
-  //     }
+        if (!token) {
+          setSubmitError("User not authenticated. Please log in again.");
+          return;
+        }
 
-  //     console.log("Fetching admin settings for role:", role);
+        const response = await axios.get(`${serverURL}/members`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-  //     try {
-  //       // Set session persistence for the auth object
-  //       await setPersistence(auth, browserSessionPersistence);
+        if (response.status === 200) {
+          console.log("Fetched members:", response.data);
+          setMembers(response.data);
 
-  //       // Use onAuthStateChanged to ensure we handle the user authentication state
-  //       auth.onAuthStateChanged(async (user) => {
-  //         if (user) {
-  //           const token = await user.getIdToken();
-  //           console.log("Token obtained:", token);
+          const foundMember = response.data.find((member: any) => member.registrationNumber === surety1MembersNo);
+          if (foundMember) {
+            console.log("Matched Surety Member:", foundMember);
+            setSurety1Name(`${foundMember.surname} ${foundMember.firstName}`);
+          } else {
+            console.warn("No member matched for registration number:", surety1MembersNo);
+            setSurety1Name("Not Found");
+          }
+        } else {
+          console.error("Failed to fetch members with status:", response.status);
+          setSubmitError("Failed to fetch members.");
+        }
+      } catch (error) {
+        console.error("Error fetching members:", error);
+        setSubmitError("Error fetching members.");
+      }
+    };
 
-  //           const response = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URL}/fetch-cooperative-admin-settings`, {
-  //             headers: {
-  //               Authorization: `Bearer ${token}`,
-  //               'Content-Type': 'application/json',
-  //             },
-  //           });
+    fetchAllMembers();
+  }, [getCurrentUserToken, surety1MembersNo]);
 
-  //           if (response.status === 200) {
-  //             console.log("Admin settings fetched successfully:", response.data);
-
-  //             if (Array.isArray(response.data)) {
-  //               setAdminSettings(response.data[0]); // Take the first item if it's an array
-  //             } else {
-  //               console.error("Unexpected API response format:", response.data);
-  //             }
-  //           } else {
-  //             throw new Error('Failed to fetch admin settings');
-  //           }
-  //         }
-  //       });
-  //     } catch (error) {
-  //       console.error("Error fetching admin settings:", error);
-  //     }
-  //   };
-
-  //   fetchAdminSettings();
-  // }, [role]);
-
-
-
-  // useEffect(() => {
-  //   fetchData();
-  // }, [fetchData, role]);
-
-  // console.log("price",loanFormPrice)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -369,7 +356,7 @@ const LoanFormModal = () => {
   
             {/* Loan Details Section */}
             <span className="text-xs text-gray-400 font-medium">Loan Details</span>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col flex-wrap gap-4">
               <InputField
                 label="Amount Required"
                 name="amountRequired"
@@ -417,9 +404,9 @@ const LoanFormModal = () => {
             )}
   
             {/* Surety Information */}
-            <span className="text-xs text-gray-400 font-medium">Surety Information</span>
+            {/* <span className="text-xs text-gray-400 font-medium">Surety Information</span> */}
             <div className="flex flex-wrap gap-4">
-              <InputField
+              {/* <InputField
                 label="BVN"
                 name="bvn"
                 register={register}
@@ -460,15 +447,27 @@ const LoanFormModal = () => {
                 name="surety2telePhone"
                 register={register}
                 error={errors?.surety2telePhone}
-              />
-            </div>
+              /> */}
+            </div> 
+
+            {/* <div className="flex flex-wrap gap-4">
+        <div className="w-full sm:w-[48%] lg:w-[32%] p-4 border border-gray-300 rounded-md">
+          <label className="font-medium">Surety 1 Name</label>
+          <div>{surety1Name || "Enter Surety 1 Member Number"}</div>
+        </div>
+
+        <div className="w-full sm:w-[48%] lg:w-[32%] p-4 border border-gray-300 rounded-md">
+          <label className="font-medium">Surety 1 Member Number</label>
+          <div>{surety1MembersNo || "Enter Surety 1 Member Number"}</div>
+        </div>
+      </div> */}
   
             {submitError && <span className="text-red-500">{submitError}</span>}
   
             <button
-    type="submit"
-    disabled={submitting}
-    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition flex items-center justify-center"
+              type="submit"
+              disabled={submitting}
+              className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition flex items-center justify-center"
   >
     {submitting ? (
       <>

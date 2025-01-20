@@ -94,60 +94,54 @@ const MemberProfilePage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setLoading(true);
         const user = auth.currentUser;
-        if (!user) {
-          setError("User not authenticated");
-          return;
-        }
+        if (!user) throw new Error("User not authenticated");
 
         const token = await user.getIdToken();
-        const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+        const serverURL =
+          process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
         const response = await axios.get(`${serverURL}/member/savings/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = response.data.stats;
-        const latestRecord = data[data.length - 1];
+        const data = response.data.stats || [];
+        const latestRecord = data[data.length - 1] || {};
 
-        // Calculate totals
-        const totalContributions = data.reduce((sum, record) => sum + (record.contributions || 0), 0);
-        const totalSavings = data.reduce((sum, record) => sum + (record.savings || 0), 0);
-        const totalLoans = data.reduce((sum, record) => sum + (record.loans || 0), 0);
-
-        // Get the latest transaction
-        const latestTransaction = latestRecord
-          ? {
-              type: latestRecord.contributions > 0
-                ? "Contribution"
-                : latestRecord.savings > 0
-                ? "Savings"
-                : latestRecord.loans > 0
-                ? "Loan"
-                : "None",
-              amount:
-                latestRecord.contributions ||
-                latestRecord.savings ||
-                latestRecord.loans ||
-                0,
-              date: latestRecord.date,
-            }
-          : null;
-
-        // Update state
         setStats({
-          totalContributions,
-          totalSavings,
-          totalLoans,
-          latestTransaction,
+          totalContributions: data.reduce(
+            (sum, record) => sum + (record.contributions || 0),
+            0
+          ),
+          totalSavings: data.reduce(
+            (sum, record) => sum + (record.savings || 0),
+            0
+          ),
+          totalLoans: data.reduce((sum, record) => sum + (record.loans || 0), 0),
+          latestTransaction: latestRecord
+            ? {
+                type:
+                  latestRecord.contributions > 0
+                    ? "Contribution"
+                    : latestRecord.savings > 0
+                    ? "Savings"
+                    : latestRecord.loans > 0
+                    ? "Loan"
+                    : "None",
+                amount:
+                  latestRecord.contributions ||
+                  latestRecord.savings ||
+                  latestRecord.loans ||
+                  0,
+                date: latestRecord.date || "",
+              }
+            : null,
           savingsBalance: latestRecord?.grandTotal || 0,
         });
 
-        // Check eligibility
         setIsEligible(response.data.eligibility === "Eligible for Loan");
       } catch (err) {
-        console.error("Failed to fetch stats:", err);
-        setError("Failed to fetch stats");
+        console.error(err);
+        setStats(null);
       } finally {
         setLoading(false);
       }
@@ -155,7 +149,6 @@ const MemberProfilePage = () => {
 
     fetchStats();
   }, []);
-
 
 useEffect(() => {
   const fetchTransaction = async () => {

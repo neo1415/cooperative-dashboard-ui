@@ -142,7 +142,7 @@ const TransactionsTable: React.FC = () => {
 
   return (
     <>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {/* {error && <p style={{ color: "red" }}>{error}</p>} */}
       {loading && <CircularProgress style={{ display: "block", margin: "auto" }} />}
 
       <FormControl variant="outlined" fullWidth style={{ marginBottom: 20 }}>
