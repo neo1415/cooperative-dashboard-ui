@@ -89,7 +89,8 @@ const MemberSavingsPage = () => {
         setLoading(true);
         const user = auth.currentUser;
         if (!user) {
-          throw new Error("User not authenticated");
+          setError("User not authenticated");
+          return;
         }
 
         const token = await user.getIdToken();
@@ -105,40 +106,34 @@ const MemberSavingsPage = () => {
         const totalSavings = data.reduce((sum, record) => sum + (record.savings || 0), 0);
         const totalLoans = data.reduce((sum, record) => sum + (record.loans || 0), 0);
 
+        const latestTransaction = {
+          type: latestRecord.contributions > 0
+            ? "Contribution"
+            : latestRecord.savings > 0
+            ? "Savings"
+            : latestRecord.loans > 0
+            ? "Loan"
+            : "None",
+          amount:
+            latestRecord.contributions ||
+            latestRecord.savings ||
+            latestRecord.loans ||
+            0,
+          date: latestRecord.date || "N/A",
+        };
+
         setStats({
           totalContributions,
           totalSavings,
           totalLoans,
-          latestTransaction: latestRecord
-            ? {
-                type: latestRecord.contributions > 0
-                  ? "Contribution"
-                  : latestRecord.savings > 0
-                  ? "Savings"
-                  : latestRecord.loans > 0
-                  ? "Loan"
-                  : "None",
-                amount:
-                  latestRecord.contributions ||
-                  latestRecord.savings ||
-                  latestRecord.loans ||
-                  0,
-                date: latestRecord.date || "N/A",
-              }
-            : null,
+          latestTransaction,
           savingsBalance: latestRecord.grandTotal || 0,
         });
 
         setIsEligible(response.data.eligibility === "Eligible for Loan");
       } catch (err) {
         console.error("Failed to fetch stats:", err);
-        setStats({
-          totalContributions: 0,
-          totalSavings: 0,
-          totalLoans: 0,
-          latestTransaction: null,
-          savingsBalance: 0,
-        });
+        setError("Failed to fetch stats");
       } finally {
         setLoading(false);
       }
@@ -165,18 +160,19 @@ const MemberSavingsPage = () => {
         try {
           setLoading(true);
           const user = auth.currentUser;
-          if (!user) throw new Error("User not authenticated");
-  
-          const token = await user.getIdToken();
-          const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
-          const response = await axios.get<Transaction>(`${serverURL}/single-transaction`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-  
-          setTransaction(response.data || null);
-        } catch (err) {
-          console.error("Failed to fetch transaction:", err);
-          setTransaction(null); // Default placeholder
+          if (user) {
+            const token = await user.getIdToken();
+            const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+            const response = await axios.get(`${serverURL}/single-transaction`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setTransaction(response.data);
+          } else {
+            setError('User not authenticated');
+          }
+        } catch (error) {
+          setError('Failed to fetch transaction');
+          console.error(error);
         } finally {
           setLoading(false);
         }
@@ -184,13 +180,15 @@ const MemberSavingsPage = () => {
   
       fetchTransaction();
     }, []);
-  
+
     useEffect(() => {
       const fetchMemberData = async () => {
         try {
           setLoading(true);
           const user = auth.currentUser;
-          if (!user) throw new Error("User not authenticated");
+          if (!user) {
+            throw new Error("User not authenticated");
+          }
   
           const token = await user.getIdToken();
           const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
@@ -198,20 +196,44 @@ const MemberSavingsPage = () => {
           const profileResponse = await axios.get(`${serverURL}/member/profile`, {
             headers: { Authorization: `Bearer ${token}` },
           });
+          setMemberData(profileResponse.data);
   
-          setMemberData(profileResponse.data || { name: "N/A", email: "N/A" });
+          const cooperativeSettingsResponse = await axios.get(`${serverURL}/fetch-cooperative-admin-settings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
   
+          const cooperativeSettings = cooperativeSettingsResponse.data.find(
+            (setting) => setting.cooperativeId === profileResponse.data.cooperativeId
+          );
+  
+          if (!cooperativeSettings) {
+            throw new Error("Cooperative settings not found.");
+          }
+
           const savingsResponse = await axios.get(`${serverURL}/member/first-deposit`, {
             headers: { Authorization: `Bearer ${token}` },
           });
   
-          setIsFirstDeposit(savingsResponse.data.isFirstDeposit || false);
-          setShareCapital(savingsResponse.data.shareCapital || 0);
+          // Ensure to check the contributions of the specific member only
+          const memberSavingsResponse = await axios.get(`${serverURL}/member/get-savings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+  
+          const memberContributions = memberSavingsResponse.data.filter(
+            (record) => record.memberId === user.uid && record.type === "contribution"
+          );
+  
+          if (memberContributions.length === 0) {
+            setIsFirstDeposit(true);
+            setShareCapital(cooperativeSettings.shareCapital);
+            console.log("First contribution: Share Capital added", cooperativeSettings.shareCapital);
+          } else {
+            setIsFirstDeposit(false);
+            console.log("Share Capital already collected");
+          }
         } catch (err) {
-          console.error("Failed to fetch member data:", err);
-          setMemberData(null); // Default placeholder
-          setIsFirstDeposit(false);
-          setShareCapital(0);
+          setError("Failed to fetch member data");
+          console.error(err);
         } finally {
           setLoading(false);
         }
@@ -219,6 +241,7 @@ const MemberSavingsPage = () => {
   
       fetchMemberData();
     }, []);
+  
 
   const config = {
     public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
@@ -256,15 +279,35 @@ const MemberSavingsPage = () => {
 
   const contributionAmount = Number(memberData?.memberDetails?.amountPaid || 0);
 
-  // Flutterwave configuration for "contribution" deposit
+  // Prevent double addition of shareCapital
+  const totalContribution = isFirstDeposit && shareCapital !== null
+    ? contributionAmount + shareCapital
+    : contributionAmount;
+
+  console.log("Total Contribution Calculated:", totalContribution); // Debugging point
+
   const contributionConfig = {
-    ...config,
-    amount: contributionAmount, // Fixed amount for contributions
-    callback: async (response: any) => {
+    public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+    tx_ref: Date.now().toString(),
+    amount: totalContribution, // Adjusted amount for first-time contributions
+    currency: "NGN",
+    payment_options: "card,mobilemoney,ussd",
+    customer: {
+      email: memberData?.email || "default-email@example.com",
+      phone_number: memberData?.memberDetails?.telephone1 || "0000000000",
+      name: `${memberData?.firstName || ""} ${memberData?.surname || ""}`,
+    },
+    customizations: {
+      title: "Contribution Payment",
+      description: "Deposit for cooperative contribution",
+      logo: "https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-online-shop-log.jpg",
+    },
+    callback: async (response) => {
       if (response.status === "successful") {
+        console.log("Payment successful", response);
         await axios.post(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/member/savings`,
-          { amount: contributionAmount, type: "contribution", transactionId: response.transaction_id },
+          { amount: totalContribution, type: "contribution", transactionId: response.transaction_id },
           { headers: { Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` } }
         );
       }
@@ -272,7 +315,6 @@ const MemberSavingsPage = () => {
     },
     onClose: () => {},
   };
-
 
 
   if (loading) return <CircularProgress />;

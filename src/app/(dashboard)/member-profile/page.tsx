@@ -380,7 +380,7 @@ useEffect(() => {
         </div>
         {/* BOTTOM */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
-          <h1>Savings & WIthdrawals</h1>
+          <h1>Savings & Loans</h1>
           <TransactionsTable />
         </div>
       </div>
@@ -390,12 +390,12 @@ useEffect(() => {
           <h1 className="text-xl font-semibold">Savings</h1>
           <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
            
-          <div className="flex flex-col gap-4 bg-white p-8 rounded-lg max-w-md mx-auto mt-4">
+          {/* <div className="flex flex-col gap-4 bg-white p-8 rounded-lg max-w-md mx-auto mt-4">
           <Typography variant="h6" className="font-semibold">
             Calendar Reminder
           </Typography>
           <EventCalendar />
-        </div>
+        </div> */}
           </div>
         </div>
       
