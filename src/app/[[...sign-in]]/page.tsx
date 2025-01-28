@@ -1,18 +1,20 @@
-'use client';
+"use client"
 
 import { useEffect, useState } from 'react';
-import { signInWithEmailAndPassword, getIdTokenResult } from 'firebase/auth';
+import { signInWithEmailAndPassword, getIdTokenResult, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { auth } from '../api/config';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
   // Check if user is already logged in and redirect based on role
@@ -49,6 +51,15 @@ const LoginPage = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+  // Check email verification status
+  // await user.reload(); // Refresh user data
+  // if (!user.emailVerified) {
+  //   await sendEmailVerification(user); // Use the imported function here
+  //   setShowModal(true);
+  //   setTimeout(() => setShowModal(false), 5000); // Hide modal after 5 seconds
+  //   throw new Error('Email not verified. Please verify your email.');
+  // }
+
       // Fetch claims and route accordingly
       const idTokenResult = await user.getIdTokenResult();
       const userRole = idTokenResult.claims.role;
@@ -61,16 +72,22 @@ const LoginPage = () => {
       } else {
         throw new Error('Invalid user role');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during login:', error);
-      setError('Failed to sign in. Please check your credentials.');
+      if (error.code === 'auth/user-not-found') {
+        setError('No account found with this email.');
+      } else if (error.code === 'auth/too-many-requests'){
+        setError("Too many attempts, please try again later");
+      }  else if (error.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else {
+        setError('Failed to sign in. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  
-  
   return (
     <div className="h-screen flex items-center justify-center bg-lamaSkyLight">
       <div className="bg-white p-12 rounded-md shadow-2xl flex flex-col gap-2">
@@ -120,6 +137,24 @@ const LoginPage = () => {
             Sign up here
           </Link>
         </p>
+
+        <Modal open={showModal} onClose={() => setShowModal(false)}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 1,
+            }}
+          >
+            <h2>Please Verify Your Email</h2>
+            <p>An email has been sent to {email}. Please verify your email before logging in.</p>
+          </Box>
+        </Modal>
       </div>
     </div>
   );

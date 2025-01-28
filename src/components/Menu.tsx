@@ -57,37 +57,40 @@ const Menu = () => {
       return;
     }
 
-    router.push(href.startsWith("/") ? href : `/${href}`);
+    router.push(href.startsWith("/") ? href : `${href}`);
+
   };
+
+  if (!menuItems.some(section => section.items.some(item => item.visible.includes(role!)))) {
+    return <div className="text-gray-500 p-4">You do not have access to any menu items.</div>;
+  }
 
   return (
     <div className="mt-4 text-sm">
-      {menuItems.map((section) => (
-        <div className="flex flex-col gap-2" key={section.title}>
-          <span className="hidden lg:block text-gray-400 font-light my-4">{section.title}</span>
-          {section.items.map((item) => {
-            if (item.visible.includes(role!)) {
-              return (
+{menuItems.map((section) => (
+    <div className="flex flex-col gap-2" key={section.title}>
+        <span className="hidden lg:block text-gray-400 font-light my-4">{section.title}</span>
+        {section.items
+            .filter((item) => item.visible.includes(role!))
+            .map((item) => (
                 <div
-                  key={item.label}
-                  onClick={() => handleMenuItemClick(item.href)}
-                  className="flex items-center justify-center lg:justify-start gap-2 md:gap-4 text-gray-500 py-2 px-2 md:px-3 rounded-md hover:bg-neoSkyLight cursor-pointer transition-all duration-200 ease-in-out"
+                    key={item.label}
+                    onClick={() => handleMenuItemClick(item.href)}
+                    className="flex items-center justify-center lg:justify-start gap-2 md:gap-4 text-gray-500 py-2 px-2 md:px-3 rounded-md hover:bg-neoSkyLight cursor-pointer transition-all duration-200 ease-in-out"
                 >
-                  <Image
-                    src={item.icon}
-                    alt="item icon"
-                    width={24} // Adjust width for responsiveness
-                    height={24} // Adjust height for responsiveness
-                    className="md:w-6 md:h-6 lg:w-8 lg:h-8 transition-all duration-200"
-                  />
-                  <span className="text-xs md:text-sm lg:text-base hidden md:block">{item.label}</span>
+                    <Image
+                        src={item.icon}
+                        alt="item icon"
+                        width={24}
+                        height={24}
+                        className="md:w-6 md:h-6 lg:w-8 lg:h-8 transition-all duration-200"
+                    />
+                    <span className="text-xs md:text-sm lg:text-base hidden md:block">{item.label}</span>
                 </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-      ))}
+            ))}
+    </div>
+))}
+
     </div>
   );
 };
